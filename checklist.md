@@ -80,4 +80,4 @@
 - [x] Credit 패널 보강 — OAS/CDX/ETF proxy와 equity hedge beta
 - [x] Macro surprise/reaction 패널 골격 추가
 - [x] mock e2e 재검증
-- [ ] 커밋 및 GitHub push
+- [x] 커밋 및 GitHub push

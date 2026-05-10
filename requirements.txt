@@ -1,0 +1,9 @@
+# 회사 PC(Windows)에서 설치. macOS에선 blpapi 제외하고 설치.
+# blpapi는 PyPI에 없고 별도 인덱스에서 설치:
+#   pip install --index-url=https://blpapi.bloomberg.com/repository/releases/python/simple/ blpapi
+
+jinja2>=3.1
+pandas>=2.0
+numpy>=1.24
+pyyaml>=6.0
+scipy>=1.11

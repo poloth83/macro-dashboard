@@ -1,0 +1,148 @@
+# 패널별 블룸버그 티커 매핑. 회사 PC에서 실제 fetch 시 권한/티커명 오류 발견되면 여기서 보정.
+# 모든 ticker는 bdh()/bdp()로 호출 가능한 표준 형식.
+# 새 항목 추가 시 panel/category/ticker/label/unit/window는 필수.
+
+defaults:
+  field: PX_LAST          # 기본 가격 필드
+  history_window: 3Y      # percentile/z-score 계산용 lookback
+  history_extra:
+    rates_policy: 5Y      # 정책금리·실질금리 등은 사이클이 길어 5Y 병기
+
+panels:
+
+  # =====================================================
+  # 헤드라인 — 달러 유동성 / Risk Regime
+  # =====================================================
+  liquidity:
+    name: 달러 유동성
+    series:
+      - {ticker: "FARBAST Index",  label: "Fed Balance Sheet",   unit: "USD bn"}
+      - {ticker: "ARDRESBO Index", label: "Reserve Balances",    unit: "USD bn"}
+      - {ticker: "USTBTGA Index",  label: "TGA",                 unit: "USD bn"}
+      - {ticker: "RRPONTSY Index", label: "Overnight RRP",       unit: "USD bn"}
+      - {ticker: "SOFRRATE Index", label: "SOFR",                unit: "%"}
+      - {ticker: "IORB Index",     label: "IORB",                unit: "%"}
+      # SOFR-IORB spread는 stats 단계에서 계산
+
+  risk_regime:
+    name: Risk Regime
+    series:
+      - {ticker: "SPX Index",      label: "S&P 500",             unit: "pt"}
+      - {ticker: "NDX Index",      label: "Nasdaq 100",          unit: "pt"}
+      - {ticker: "RTY Index",      label: "Russell 2000",        unit: "pt"}
+      - {ticker: "VIX Index",      label: "VIX",                 unit: "vol"}
+      - {ticker: "MOVE Index",     label: "MOVE",                unit: "vol"}
+      - {ticker: "XBTUSD Curncy",  label: "BTC/USD",             unit: "USD"}
+
+  # =====================================================
+  # A. UST 코어
+  # =====================================================
+  ust_core:
+    name: UST 코어
+    series:
+      - {ticker: "USGG3M Index",   label: "UST 3M",              unit: "%"}
+      - {ticker: "USGG2YR Index",  label: "UST 2Y",              unit: "%"}
+      - {ticker: "USGG5YR Index",  label: "UST 5Y",              unit: "%"}
+      - {ticker: "USGG7YR Index",  label: "UST 7Y",              unit: "%"}
+      - {ticker: "USGG10YR Index", label: "UST 10Y",             unit: "%"}
+      - {ticker: "USGG30YR Index", label: "UST 30Y",             unit: "%"}
+      - {ticker: "USYC2Y10 Index", label: "2s10s slope",         unit: "bp"}
+      - {ticker: "USYC5Y30 Index", label: "5s30s slope",         unit: "bp"}
+      # 3M10Y, 2/5/10 butterfly는 stats 단계에서 계산
+
+  # =====================================================
+  # B. 실질금리 / BEI
+  # =====================================================
+  real_bei:
+    name: 실질금리 & BEI
+    series:
+      - {ticker: "USGGBE05 Index", label: "5Y BEI",              unit: "%"}
+      - {ticker: "USGGBE10 Index", label: "10Y BEI",             unit: "%"}
+      - {ticker: "USGGT05Y Index", label: "5Y TIPS yield",       unit: "%"}
+      - {ticker: "USGGT10Y Index", label: "10Y TIPS yield",      unit: "%"}
+      - {ticker: "USGG5Y5Y Index", label: "5Y5Y BEI",            unit: "%"}
+      # r-star는 NY Fed CSV에서 별도 fetch (Phase 4)
+
+  # =====================================================
+  # C. Swap Spread / Funding
+  # =====================================================
+  swap_spread:
+    name: Swap Spread & Funding
+    series:
+      - {ticker: "USOSFR2 Curncy",  label: "SOFR Swap 2Y",       unit: "%"}
+      - {ticker: "USOSFR5 Curncy",  label: "SOFR Swap 5Y",       unit: "%"}
+      - {ticker: "USOSFR10 Curncy", label: "SOFR Swap 10Y",      unit: "%"}
+      - {ticker: "USOSFR30 Curncy", label: "SOFR Swap 30Y",      unit: "%"}
+      # Swap spread = swap - UST yield, stats 단계에서 계산
+
+  # =====================================================
+  # D. 글로벌 듀레이션
+  # =====================================================
+  global_duration:
+    name: 글로벌 듀레이션
+    series:
+      - {ticker: "GDBR10 Index",   label: "Bund 10Y",            unit: "%"}
+      - {ticker: "GBTPGR10 Index", label: "BTP 10Y",             unit: "%"}
+      - {ticker: "GFRN10 Index",   label: "OAT 10Y",             unit: "%"}
+      - {ticker: "GUKG10 Index",   label: "Gilt 10Y",            unit: "%"}
+      - {ticker: "GUKG30 Index",   label: "Gilt 30Y",            unit: "%"}
+      - {ticker: "GJGB10 Index",   label: "JGB 10Y",             unit: "%"}
+      - {ticker: "GJGB30 Index",   label: "JGB 30Y",             unit: "%"}
+      # BTP-Bund, OAT-Bund spread는 stats 단계에서 계산
+
+  # =====================================================
+  # E. FX
+  # =====================================================
+  fx:
+    name: FX
+    series:
+      - {ticker: "USDJPY Curncy",  label: "USDJPY",              unit: "JPY"}
+      - {ticker: "USDKRW Curncy",  label: "USDKRW",              unit: "KRW"}
+
+  # =====================================================
+  # F. Credit (proxy)
+  # =====================================================
+  credit:
+    name: Credit Proxy
+    series:
+      - {ticker: "LQD US Equity",  label: "LQD (IG ETF)",        unit: "USD"}
+      - {ticker: "HYG US Equity",  label: "HYG (HY ETF)",        unit: "USD"}
+      # CDX IG/HY 인덱스는 회사 PC에서 정확한 티커 확인 후 추가
+
+  # =====================================================
+  # G. 매크로 지표 (월/주 단위 — bdh로 시계열 + bdp로 next release date)
+  # =====================================================
+  macro:
+    name: 매크로 지표
+    series:
+      - {ticker: "CPI YOY Index",  label: "Headline CPI YoY",    unit: "%"}
+      - {ticker: "CPI XYOY Index", label: "Core CPI YoY",        unit: "%"}
+      - {ticker: "PPI YOY Index",  label: "PPI YoY",             unit: "%"}
+      - {ticker: "NFP TCH Index",  label: "Nonfarm Payrolls",    unit: "k"}
+      - {ticker: "ADP CHNG Index", label: "ADP Employment",      unit: "k"}
+      - {ticker: "JOLTTOTL Index", label: "JOLTS Openings",      unit: "k"}
+      - {ticker: "INJCJC Index",   label: "Initial Claims",      unit: "k"}
+      - {ticker: "INJCSP Index",   label: "Continuing Claims",   unit: "k"}
+      - {ticker: "NAPMPMI Index",  label: "ISM Manufacturing",   unit: "idx"}
+      - {ticker: "NAPMNMI Index",  label: "ISM Services",        unit: "idx"}
+      - {ticker: "CONSSENT Index", label: "Michigan Sentiment",  unit: "idx"}
+      - {ticker: "CONSPXMD Index", label: "Michigan Inf Exp 1Y", unit: "%"}
+      - {ticker: "RSTAMOM Index",  label: "Retail Sales MoM",    unit: "%"}
+      - {ticker: "GDP CQOQ Index", label: "GDP QoQ Annualized",  unit: "%"}
+      - {ticker: "GDPNOW Index",   label: "Atlanta GDPNow",      unit: "%"}
+
+# =====================================================
+# 계산 derivations — fetch가 아닌 stats 단계에서 생성
+# =====================================================
+derived:
+  - {name: "SOFR-IORB spread",     formula: "SOFRRATE Index - IORB Index",                  unit: "bp"}
+  - {name: "10Y Swap Spread",      formula: "USOSFR10 Curncy - USGG10YR Index",             unit: "bp"}
+  - {name: "5Y Swap Spread",       formula: "USOSFR5 Curncy - USGG5YR Index",               unit: "bp"}
+  - {name: "2Y Swap Spread",       formula: "USOSFR2 Curncy - USGG2YR Index",               unit: "bp"}
+  - {name: "30Y Swap Spread",      formula: "USOSFR30 Curncy - USGG30YR Index",             unit: "bp"}
+  - {name: "BTP-Bund 10Y",         formula: "GBTPGR10 Index - GDBR10 Index",                unit: "bp"}
+  - {name: "OAT-Bund 10Y",         formula: "GFRN10 Index - GDBR10 Index",                  unit: "bp"}
+  - {name: "3M10Y slope",          formula: "USGG10YR Index - USGG3M Index",                unit: "bp"}
+  - {name: "2/5/10 butterfly",     formula: "2*USGG5YR Index - USGG2YR Index - USGG10YR Index", unit: "bp"}
+  - {name: "10Y Real (TIPS)",      formula: "USGGT10Y Index",                               unit: "%"}
+  - {name: "5Y Real (TIPS)",       formula: "USGGT05Y Index",                               unit: "%"}

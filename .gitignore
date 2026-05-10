@@ -1,0 +1,27 @@
+# 가상환경
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# 실데이터 / 생성물 — repo에 올리지 않음
+data/*.json
+output/index.html
+output/history/*.html
+output/assets/
+logs/
+
+# 단, 폴더 자체는 유지하기 위해 .gitkeep 허용
+!data/.gitkeep
+!output/.gitkeep
+!output/history/.gitkeep
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp

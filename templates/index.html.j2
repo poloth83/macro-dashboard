@@ -1,0 +1,148 @@
+{# 매크로/금리 대시보드 메인 레이아웃. build_dashboard.py가 panels/derived를 주입해 렌더링 #}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Macro & Rates Dashboard — {{ snapshot_date }}</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-left">
+    <h1>Macro &amp; Rates Dashboard</h1>
+    <div class="meta">
+      <span class="date">{{ snapshot_date }}</span>
+      <span class="generated">generated {{ generated_at }}</span>
+    </div>
+  </div>
+  <nav class="panel-nav">
+    {% for p in panels %}
+      <a href="#panel-{{ p.key }}">{{ p.name }}</a>
+    {% endfor %}
+    <a href="#panel-derived">Derived</a>
+  </nav>
+</header>
+
+<main>
+
+  {# ========== 패널 루프 ========== #}
+  {% for panel in panels %}
+  <section class="panel" id="panel-{{ panel.key }}">
+    <h2>{{ panel.name }}</h2>
+    <div class="grid">
+      {% for m in panel.metrics %}
+      <article class="metric {{ m.zscore_3y | color_z }}">
+        <header>
+          <div class="label">{{ m.label }}</div>
+          <div class="ticker">{{ m.ticker }}</div>
+        </header>
+        <div class="current">{{ m.current | fmt(m.unit) }}</div>
+        <div class="changes">
+          <span title="1D">{{ m.change_1d | fmt_change(m.unit) }}</span>
+          <span title="1W">{{ m.change_1w | fmt_change(m.unit) }}</span>
+          <span title="1M">{{ m.change_1m | fmt_change(m.unit) }}</span>
+        </div>
+        <div class="stats-row">
+          <div class="stat">
+            <span class="stat-label">3Y %ile</span>
+            <span class="stat-value">{{ m.percentile_3y | fmt_pct }}</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">3Y z</span>
+            <span class="stat-value">{{ m.zscore_3y | fmt_z }}</span>
+          </div>
+        </div>
+        <div class="range-row">
+          <span class="range-low">L {{ m.low_52w | fmt(m.unit) }}</span>
+          <span class="range-high">H {{ m.high_52w | fmt(m.unit) }}</span>
+        </div>
+        <canvas class="sparkline" data-spark="{{ m.sparkline_6m | tojson }}"></canvas>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+  {% endfor %}
+
+  {# ========== Derived (스왑스프레드, BTP-Bund 등) ========== #}
+  <section class="panel" id="panel-derived">
+    <h2>Derived — Spreads &amp; Slopes</h2>
+    <div class="grid">
+      {% for m in derived %}
+      <article class="metric {{ m.zscore_3y | color_z }}">
+        <header>
+          <div class="label">{{ m.label }}</div>
+          <div class="ticker">derived</div>
+        </header>
+        <div class="current">{{ m.current | fmt(m.unit) }}</div>
+        <div class="changes">
+          <span title="1D">{{ m.change_1d | fmt_change(m.unit) }}</span>
+          <span title="1W">{{ m.change_1w | fmt_change(m.unit) }}</span>
+          <span title="1M">{{ m.change_1m | fmt_change(m.unit) }}</span>
+        </div>
+        <div class="stats-row">
+          <div class="stat">
+            <span class="stat-label">3Y %ile</span>
+            <span class="stat-value">{{ m.percentile_3y | fmt_pct }}</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">3Y z</span>
+            <span class="stat-value">{{ m.zscore_3y | fmt_z }}</span>
+          </div>
+        </div>
+        <div class="range-row">
+          <span class="range-low">L {{ m.low_52w | fmt(m.unit) }}</span>
+          <span class="range-high">H {{ m.high_52w | fmt(m.unit) }}</span>
+        </div>
+        <canvas class="sparkline" data-spark="{{ m.sparkline_6m | tojson }}"></canvas>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <span>Macro &amp; Rates Dashboard · 단일 소스 Bloomberg Terminal · 정량 점검용 (의사결정 도구 X)</span>
+</footer>
+
+<script>
+  // 모든 sparkline canvas에 Chart.js 미니 라인 차트 그리기
+  document.querySelectorAll('canvas.sparkline').forEach((cv) => {
+    const raw = cv.dataset.spark;
+    if (!raw) return;
+    let data;
+    try { data = JSON.parse(raw); } catch (e) { return; }
+    if (!Array.isArray(data) || data.length < 2) return;
+
+    new Chart(cv, {
+      type: 'line',
+      data: {
+        labels: data.map((_, i) => i),
+        datasets: [{
+          data: data,
+          borderColor: '#7aa2f7',
+          borderWidth: 1.5,
+          fill: false,
+          pointRadius: 0,
+          tension: 0.2,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+        scales: {
+          x: { display: false },
+          y: { display: false }
+        },
+        animation: false,
+      }
+    });
+  });
+</script>
+
+</body>
+</html>

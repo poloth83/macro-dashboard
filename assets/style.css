@@ -1,0 +1,215 @@
+/* 매크로/금리 대시보드 다크 스타일. 운용역 모니터에 어울리는 저자극 톤. */
+
+:root {
+  --bg: #14171f;
+  --bg-elev: #1c2030;
+  --bg-card: #232838;
+  --border: #2e3447;
+  --fg: #e2e8f0;
+  --fg-muted: #94a3b8;
+  --fg-dim: #64748b;
+  --accent: #7aa2f7;
+
+  /* z-score 색상 — 강도별 */
+  --hot-high-bg: #4a1d1d;
+  --hot-high-fg: #f87171;
+  --warm-high-bg: #322820;
+  --warm-high-fg: #fbbf24;
+  --hot-low-bg: #0d3a2e;
+  --hot-low-fg: #4ade80;
+  --warm-low-bg: #1a2e3a;
+  --warm-low-fg: #38bdf8;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
+               "Pretendard", "Noto Sans KR", system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+/* ---------- topbar ---------- */
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 24px;
+  background: var(--bg-elev);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.topbar h1 {
+  font-size: 16px;
+  margin: 0;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.meta {
+  display: flex;
+  gap: 12px;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--fg-dim);
+}
+.meta .date {
+  color: var(--accent);
+  font-weight: 500;
+}
+.panel-nav {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.panel-nav a {
+  color: var(--fg-muted);
+  text-decoration: none;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background 0.1s;
+}
+.panel-nav a:hover {
+  background: var(--bg-card);
+  color: var(--fg);
+}
+
+/* ---------- panels ---------- */
+main { padding: 16px 24px 60px; }
+.panel {
+  margin-bottom: 24px;
+  scroll-margin-top: 80px;
+}
+.panel h2 {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--fg-muted);
+  margin: 0 0 10px 0;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+/* ---------- metric card ---------- */
+.metric {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+}
+.metric header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+.metric .label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fg);
+}
+.metric .ticker {
+  font-size: 10px;
+  color: var(--fg-dim);
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  white-space: nowrap;
+}
+.metric .current {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--fg);
+  font-feature-settings: "tnum";
+}
+.metric .changes {
+  display: flex;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--fg-muted);
+  font-feature-settings: "tnum";
+}
+.metric .stats-row {
+  display: flex;
+  gap: 12px;
+  font-size: 11px;
+  border-top: 1px solid var(--border);
+  padding-top: 6px;
+}
+.metric .stat {
+  display: flex;
+  flex-direction: column;
+}
+.metric .stat-label {
+  color: var(--fg-dim);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.metric .stat-value {
+  color: var(--fg);
+  font-weight: 600;
+  font-feature-settings: "tnum";
+}
+.metric .range-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--fg-dim);
+  font-feature-settings: "tnum";
+}
+.metric .sparkline {
+  height: 36px !important;
+  width: 100% !important;
+}
+
+/* ---------- z-score 색상 ---------- */
+.z-hot-high {
+  border-left: 3px solid var(--hot-high-fg);
+}
+.z-hot-high .stat-value { color: var(--hot-high-fg); }
+.z-warm-high {
+  border-left: 3px solid var(--warm-high-fg);
+}
+.z-warm-high .stat-value { color: var(--warm-high-fg); }
+.z-hot-low {
+  border-left: 3px solid var(--hot-low-fg);
+}
+.z-hot-low .stat-value { color: var(--hot-low-fg); }
+.z-warm-low {
+  border-left: 3px solid var(--warm-low-fg);
+}
+.z-warm-low .stat-value { color: var(--warm-low-fg); }
+.z-neutral {
+  border-left: 3px solid var(--border);
+}
+.z-na {
+  border-left: 3px solid var(--bg-elev);
+  opacity: 0.6;
+}
+
+/* ---------- footer ---------- */
+footer {
+  padding: 16px 24px;
+  font-size: 11px;
+  color: var(--fg-dim);
+  text-align: center;
+  border-top: 1px solid var(--border);
+}

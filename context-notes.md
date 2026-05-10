@@ -105,3 +105,15 @@
   - `python fetch_bloomberg.py --mode dev --tickers smoke && python build_dashboard.py` 통과.
   - `python fetch_bloomberg.py --mode dev --tickers all && python build_dashboard.py` 통과.
   - full mock 기준 71개 unique ticker, 94개 metric card 렌더링.
+
+---
+
+## 2026-05-10 — Claude Code 전역 지침 이전 준비
+
+### 사용자 요청
+- 현재 Mac의 `/Users/yangtaehee/.claude/CLAUDE.md`를 회사 Windows PC에서도 그대로 설치할 수 있게 GitHub에 올려달라고 요청.
+
+### 구현
+- 원본 내용을 `agent-config/CLAUDE.md`에 그대로 추가.
+- 회사 PC에서 `powershell -ExecutionPolicy Bypass -File scripts\install_claude_md.ps1` 한 번으로 `%USERPROFILE%\.claude\CLAUDE.md`에 설치되도록 스크립트 추가.
+- 기존 회사 PC의 `CLAUDE.md`가 있으면 timestamp가 붙은 backup을 먼저 생성.

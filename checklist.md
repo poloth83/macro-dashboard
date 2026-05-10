@@ -81,3 +81,11 @@
 - [x] Macro surprise/reaction 패널 골격 추가
 - [x] mock e2e 재검증
 - [x] 커밋 및 GitHub push
+
+## Phase 1.6 — Claude Code 전역 지침 이전
+
+- [x] Mac의 `/Users/yangtaehee/.claude/CLAUDE.md` 위치 확인
+- [x] 민감정보 키워드 간단 점검
+- [x] `agent-config/CLAUDE.md`에 원본 추가
+- [x] Windows 설치 스크립트 `scripts/install_claude_md.ps1` 추가
+- [ ] 커밋 및 GitHub push

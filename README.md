@@ -54,6 +54,9 @@ python -m venv .venv
 pip install -r requirements.txt
 pip install --index-url=https://blpapi.bloomberg.com/repository/releases/python/simple/ blpapi
 
+:: Claude Code 전역 지침 설치 (선택)
+powershell -ExecutionPolicy Bypass -File scripts\install_claude_md.ps1
+
 :: Bloomberg 연결 smoke test
 python fetch_bloomberg.py --mode production --tickers smoke
 python build_dashboard.py
@@ -97,6 +100,8 @@ macro-dashboard/
 │   └── index.html.j2        # 대시보드 레이아웃
 ├── assets/
 │   └── style.css            # 다크 모드 스타일
+├── agent-config/
+│   └── CLAUDE.md            # 회사 PC에 설치할 Claude Code 전역 지침
 ├── data/                    # 일별 raw JSON (gitignored)
 ├── output/                  # 생성된 HTML
 │   ├── index.html           # 오늘 자
@@ -104,7 +109,8 @@ macro-dashboard/
 │       └── 2026-05-10.html  # 일별 스냅샷
 └── scripts/
     ├── run_daily.bat        # Windows용
-    └── run_daily.sh         # macOS 테스트용
+    ├── run_daily.sh         # macOS 테스트용
+    └── install_claude_md.ps1 # Windows Claude Code 지침 설치용
 ```
 
 ---

@@ -62,6 +62,11 @@
 - macOS에서 blpapi 못 돌리니 Phase 1 종료 시점 = "mock 데이터로 index.html 생성됨".
 - 회사 PC에서 Phase 2 시작 시 mock → production 스위치만 하면 곧바로 검증 가능한 상태로 인계.
 
+### Phase 1 종료 — 첫 커밋 push 완료
+- GitHub repo: https://github.com/poloth83/macro-dashboard
+- 첫 커밋(5a0620d): 17 files, 1707 insertions. mock e2e 통과 상태.
+- ust_core panel에 USGG3M Index 추가 (3M10Y slope derived 계산 위해).
+
 ---
 
 ## 다음 세션 시작 가이드

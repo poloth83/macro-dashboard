@@ -88,4 +88,4 @@
 - [x] 민감정보 키워드 간단 점검
 - [x] `agent-config/CLAUDE.md`에 원본 추가
 - [x] Windows 설치 스크립트 `scripts/install_claude_md.ps1` 추가
-- [ ] 커밋 및 GitHub push
+- [x] 커밋 및 GitHub push

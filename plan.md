@@ -124,3 +124,14 @@ CLAUDE.md "Simplicity First" 원칙.
 - 인증/권한 시스템 안 함 (사내망 내부 도구).
 - 리얼타임 스트리밍 안 함 (장 마감 후 일별 스냅샷이면 충분).
 - 알림/포지션 시그널 자동 생성 안 함 (1차 산출물은 "정량화된 점검표"까지).
+
+## v2 보강 원칙
+
+- 회사망에서 외부 CDN이 막혀도 동작하도록 대시보드는 로컬 asset 또는 inline SVG만 사용.
+- Bloomberg production 데이터는 핵심 티커가 비어 있으면 HTML publish를 실패시킴.
+- 금리/FX/주가처럼 매일 거래되는 시계열과 CPI/NFP/ISM처럼 발표일에만 갱신되는 macro release는 통계 계산 방식을 분리.
+- 포지션과 직접 연결되는 패널을 우선 배치.
+  - UST futures: 계약별 yield/future proxy, DV01 환산용 데이터.
+  - SOFR/FOMC: SOFR futures strip, IORB 대비 gap.
+  - Credit hedge: OAS/CDX/ETF proxy, equity index hedge beta.
+  - Macro reaction: surprise와 당일 시장 반응을 같은 카드에서 점검.

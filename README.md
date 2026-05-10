@@ -40,7 +40,7 @@ cd output && python -m http.server 8000
 ```cmd
 :: GitHub clone
 cd C:\Users\<user>
-git clone https://github.com/<user>/macro-dashboard.git
+git clone https://github.com/poloth83/macro-dashboard.git
 cd macro-dashboard
 
 :: Python 3.11+ 설치 확인
@@ -53,6 +53,10 @@ python -m venv .venv
 :: 의존성 설치 (blpapi 포함)
 pip install -r requirements.txt
 pip install --index-url=https://blpapi.bloomberg.com/repository/releases/python/simple/ blpapi
+
+:: Bloomberg 연결 smoke test
+python fetch_bloomberg.py --mode production --tickers smoke
+python build_dashboard.py
 ```
 
 ### 매일 자동 실행 (Windows 작업 스케줄러)
@@ -112,3 +116,14 @@ macro-dashboard/
 - 인증 — 사내망 내부 도구.
 - 리얼타임 스트리밍 — 일별 스냅샷이 본 용도에 맞음.
 - 자동 매매 시그널 — 1차 산출물은 정량 점검표까지.
+- 외부 CDN — 회사망 차단 리스크가 있어 SVG sparkline을 서버 렌더링.
+
+---
+
+## v2 보강 내용
+
+- `--tickers smoke`로 회사 PC 최초 Bloomberg 연결을 빠르게 확인.
+- 필수 티커의 데이터 없음, 관측치 부족, stale 상태를 품질 게이트에서 차단.
+- Futures, SOFR/FOMC, Credit OAS/CDX, Macro Surprise/Reaction 패널 추가.
+- 매크로 발표 지표는 daily fill이 아닌 release 관측치 기준 통계로 계산.
+- Credit hedge용 rolling beta는 IG OAS 변화량을 equity index 1% 변화 대비 bp 단위로 표시.

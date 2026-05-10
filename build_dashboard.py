@@ -9,10 +9,10 @@
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import sys
-from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -67,13 +67,16 @@ def compute_panels(snapshot: dict, series_map: dict[str, pd.Series]) -> list[dic
     panels_out = []
 
     for panel_key, panel_def in config["panels"].items():
-        panel_data = snapshot["panels"].get(panel_key, {})
+        panel_data = snapshot["panels"].get(panel_key, {"tickers": {}})
         series_for_panel = {}
         for s in panel_def["series"]:
             tk = s["ticker"]
+            if tk not in panel_data.get("tickers", {}):
+                continue
             series_for_panel[tk] = {
                 "label": s["label"],
                 "unit": s["unit"],
+                "frequency": s.get("frequency", "daily"),
                 "timeseries": series_map.get(tk, pd.Series([], dtype=float)),
             }
         result = stats_mod.compute_panel(panel_def["name"], series_for_panel)
@@ -92,11 +95,22 @@ def compute_derivations(series_map: dict[str, pd.Series]) -> list[dict]:
     for d in derived_defs:
         name = d["name"]
         unit = d["unit"]
-        formula = d["formula"]
         try:
-            series = _evaluate_formula(formula, series_map)
+            if d.get("type") == "rolling_beta":
+                if d["y"] not in series_map or d["x"] not in series_map:
+                    continue
+                series = _rolling_beta(
+                    series_map[d["y"]],
+                    series_map[d["x"]],
+                    window=int(d.get("window", 60)),
+                    x_mode=d.get("x_mode", "diff"),
+                )
+            else:
+                series = _evaluate_formula(d["formula"], series_map)
         except Exception as e:
             print(f"  ⚠ derived '{name}' 계산 실패: {e}", file=sys.stderr)
+            continue
+        if series.empty:
             continue
         # bp 단위는 100배 스케일 (백분율 차이를 bp로)
         if unit == "bp":
@@ -120,6 +134,9 @@ def _evaluate_formula(formula: str, series_map: dict[str, pd.Series]) -> pd.Seri
             ph = f"__S{i}__"
             expr = expr.replace(tk, ph)
             placeholders[ph] = series_map[tk]
+    expr_check = re.sub(r"__S\d+__", "", expr)
+    if re.search(r"[A-Za-z]", expr_check):
+        return pd.Series([], dtype=float)
 
     # 모든 시리즈를 같은 index로 정렬
     if not placeholders:
@@ -131,7 +148,20 @@ def _evaluate_formula(formula: str, series_map: dict[str, pd.Series]) -> pd.Seri
     return result
 
 
-def render(snapshot_date: str, panels: list[dict], derived: list[dict]) -> str:
+def _rolling_beta(y: pd.Series, x: pd.Series, window: int = 60, x_mode: str = "diff") -> pd.Series:
+    """y 변화량을 x 변화량으로 설명하는 rolling beta."""
+    aligned = pd.concat([y.rename("y"), x.rename("x")], axis=1).dropna()
+    if aligned.empty:
+        return pd.Series([], dtype=float)
+    y_change = aligned["y"].diff()
+    x_change = aligned["x"].pct_change() * 100.0 if x_mode == "pct" else aligned["x"].diff()
+    changes = pd.concat([y_change.rename("y"), x_change.rename("x")], axis=1).dropna()
+    cov = changes["y"].rolling(window).cov(changes["x"])
+    var = changes["x"].rolling(window).var()
+    return (cov / var).dropna()
+
+
+def render(snapshot_date: str, panels: list[dict], derived: list[dict], quality: dict) -> str:
     env = Environment(
         loader=FileSystemLoader(str(TEMPLATES_DIR)),
         autoescape=select_autoescape(["html"]),
@@ -148,6 +178,7 @@ def render(snapshot_date: str, panels: list[dict], derived: list[dict]) -> str:
     return template.render(
         snapshot_date=snapshot_date,
         generated_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S KST"),
+        quality=quality,
         panels=panels,
         derived=derived,
     )
@@ -172,6 +203,12 @@ def _fmt_value(v: Optional[float], unit: str = "") -> str:
         return f"{v:.1f}"
     if unit in ("vol", "idx"):
         return f"{v:.2f}"
+    if unit == "px":
+        return f"{v:.3f}"
+    if unit == "beta":
+        return f"{v:.2f}x"
+    if unit == "bp/%":
+        return f"{v:.2f}bp/%"
     if unit == "k":
         return f"{v:,.0f}k"
     if unit == "pt":
@@ -187,6 +224,10 @@ def _fmt_change(v: Optional[float], unit: str = "") -> str:
         return f"{sign}{v*100:.0f}bp"   # 금리·BEI는 변화량을 bp로 표시
     if unit == "bp":
         return f"{sign}{v:.0f}bp"
+    if unit == "beta":
+        return f"{sign}{v:.2f}x"
+    if unit == "bp/%":
+        return f"{sign}{v:.2f}"
     return f"{sign}{v:.2f}"
 
 
@@ -232,7 +273,7 @@ def main():
     derived = compute_derivations(series_map)
 
     print(f"  rendering...")
-    html = render(snapshot["date"], panels, derived)
+    html = render(snapshot["date"], panels, derived, snapshot.get("quality", {}))
 
     # 오늘 자
     index_path = OUTPUT_DIR / "index.html"

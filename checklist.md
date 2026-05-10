@@ -33,9 +33,9 @@
 - [x] `scripts/run_daily.bat` (Windows 작업 스케줄러용)
 - [x] `scripts/run_daily.sh` (macOS 테스트용)
 - [x] mock 모드로 e2e 1회 통과 — `output/index.html` 생성 확인 (1912 lines, 66 metric cards)
-- [ ] 브라우저에서 레이아웃 확인 (사용자 검토)
-- [ ] git init + 첫 커밋
-- [ ] GitHub private repo 생성 및 push
+- [x] 브라우저에서 레이아웃 확인 (사용자 검토)
+- [x] git init + 첫 커밋
+- [x] GitHub private repo 생성 및 push
 
 ## Phase 2 — 회사 PC 셋업 (Windows, 내일)
 
@@ -65,3 +65,19 @@
 - [ ] history 30일 누적 후 — 운용역 피드백 받아 v2 우선순위 결정
 - [ ] (선택) UST 입찰 결과 자동 수집 (TreasuryDirect API)
 - [ ] (선택) 컨센서스 surprise 추가 (Bloomberg ECO 함수 또는 별도 소스)
+
+## Phase 1.5 — v2 골격 보강 (현재 세션, macOS)
+
+운영 전 필수 안정화와 사용자가 요청한 추가 아이디어를 mock 환경에서 먼저 반영.
+
+- [x] Chart.js CDN 제거 — 외부망 차단에도 sparkline 표시
+- [x] `fetch_bloomberg.py --tickers smoke` 추가
+- [x] 필수 티커/최소 관측치/latest date 품질 게이트 추가
+- [x] 매크로 발표 지표를 release-frequency 통계로 분리
+- [x] Windows 로그 파일명 locale 취약성 제거
+- [x] Futures 패널 추가 — TU/FV/TY/US, DV01 환산용 데이터 골격
+- [x] SOFR/FOMC 패널 추가 — SOFR futures strip, IORB gap
+- [x] Credit 패널 보강 — OAS/CDX/ETF proxy와 equity hedge beta
+- [x] Macro surprise/reaction 패널 골격 추가
+- [x] mock e2e 재검증
+- [ ] 커밋 및 GitHub push

@@ -50,7 +50,7 @@ html, body {
   font-size: 16px;
   margin: 0;
   font-weight: 600;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
 }
 .meta {
   display: flex;
@@ -62,6 +62,12 @@ html, body {
 .meta .date {
   color: var(--accent);
   font-weight: 500;
+}
+.quality-ok {
+  color: var(--hot-low-fg);
+}
+.quality-warn {
+  color: var(--warm-high-fg);
 }
 .panel-nav {
   display: flex;
@@ -83,6 +89,24 @@ html, body {
 
 /* ---------- panels ---------- */
 main { padding: 16px 24px 60px; }
+.quality-panel {
+  margin-bottom: 18px;
+  padding: 10px 12px;
+  border: 1px solid var(--warm-high-fg);
+  background: var(--warm-high-bg);
+  border-radius: 6px;
+}
+.quality-panel h2 {
+  margin: 0 0 6px 0;
+  padding: 0;
+  border: 0;
+  color: var(--warm-high-fg);
+}
+.quality-panel ul {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--fg-muted);
+}
 .panel {
   margin-bottom: 24px;
   scroll-margin-top: 80px;
@@ -135,7 +159,7 @@ main { padding: 16px 24px 60px; }
 .metric .current {
   font-size: 22px;
   font-weight: 600;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   color: var(--fg);
   font-feature-settings: "tnum";
 }
@@ -178,6 +202,24 @@ main { padding: 16px 24px 60px; }
 .metric .sparkline {
   height: 36px !important;
   width: 100% !important;
+  display: block;
+}
+.metric svg.sparkline {
+  overflow: visible;
+}
+.metric svg.sparkline polyline {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.6;
+  vector-effect: non-scaling-stroke;
+}
+.metric .sparkline-empty {
+  border-top: 1px dashed var(--border);
+}
+.metric .asof {
+  font-size: 10px;
+  color: var(--fg-dim);
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
 }
 
 /* ---------- z-score 색상 ---------- */

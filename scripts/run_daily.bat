@@ -3,6 +3,7 @@ REM 회사 PC(Windows)에서 매일 06:30 KST에 작업 스케줄러로 실행
 REM 1) blpapi로 데이터 fetch  2) HTML 빌드  3) 로그 기록
 
 setlocal
+chcp 65001 > nul
 set ROOT=%~dp0..
 cd /d "%ROOT%"
 
@@ -13,7 +14,8 @@ if exist .venv\Scripts\activate.bat (
 
 REM 로그 디렉터리
 if not exist logs mkdir logs
-set LOGFILE=logs\%date:~0,4%-%date:~5,2%-%date:~8,2%.log
+for /f %%I in ('powershell -NoProfile -Command "Get-Date -Format yyyy-MM-dd"') do set LOGDATE=%%I
+set LOGFILE=logs\%LOGDATE%.log
 
 echo === %date% %time% === >> "%LOGFILE%"
 

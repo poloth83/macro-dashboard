@@ -13,6 +13,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import zlib
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
@@ -31,6 +32,8 @@ DATA_DIR = ROOT / "data"
 DATA_DIR.mkdir(exist_ok=True)
 
 DEFAULT_HISTORY_DAYS = 252 * 3 + 30  # 3Y + buffer
+DEFAULT_DAILY_MIN_OBS = 200
+DEFAULT_RELEASE_MIN_OBS = 12
 
 
 def load_tickers_config() -> dict:
@@ -38,17 +41,29 @@ def load_tickers_config() -> dict:
         return yaml.safe_load(f)
 
 
-def collect_all_tickers(config: dict) -> list[dict]:
+def collect_all_tickers(config: dict, selection: str = "all") -> list[dict]:
     """모든 패널의 (panel_key, ticker, label, unit) 리스트로 평탄화."""
     flat = []
+    smoke_tickers = set(config.get("smoke_tickers", []))
+    seen = set()
     for panel_key, panel in config["panels"].items():
         for s in panel["series"]:
+            if selection == "smoke" and not (s.get("required") or s["ticker"] in smoke_tickers):
+                continue
+            if s["ticker"] in seen:
+                continue
+            seen.add(s["ticker"])
             flat.append({
                 "panel": panel_key,
                 "panel_name": panel["name"],
                 "ticker": s["ticker"],
                 "label": s["label"],
                 "unit": s["unit"],
+                "field": s.get("field", config.get("defaults", {}).get("field", "PX_LAST")),
+                "frequency": s.get("frequency", "daily"),
+                "required": bool(s.get("required", False)),
+                "min_obs": s.get("min_obs"),
+                "stale_days": s.get("stale_days"),
             })
     return flat
 
@@ -57,12 +72,12 @@ def collect_all_tickers(config: dict) -> list[dict]:
 # Mode: dev (mock 데이터)
 # ---------------------------------------------------------------------------
 
-def generate_mock_series(ticker: str, days: int = DEFAULT_HISTORY_DAYS) -> pd.Series:
+def generate_mock_series(ticker: str, days: int = DEFAULT_HISTORY_DAYS, frequency: str = "daily") -> pd.Series:
     """
     티커 종류에 따라 그럴듯한 mock 시계열 생성.
     레이아웃/통계 로직 검증용. 실제 시장값과 무관.
     """
-    rng = np.random.default_rng(seed=hash(ticker) & 0xFFFFFFFF)
+    rng = np.random.default_rng(seed=zlib.crc32(ticker.encode("utf-8")))
     end = pd.Timestamp(date.today())
     dates = pd.bdate_range(end=end, periods=days)
 
@@ -74,6 +89,12 @@ def generate_mock_series(ticker: str, days: int = DEFAULT_HISTORY_DAYS) -> pd.Se
     elif "USOSFR" in ticker:
         base = rng.uniform(3.0, 5.0)
         steps = rng.normal(0, 0.03, days)
+    elif ticker.startswith("SFR"):
+        base = rng.uniform(95.0, 96.5)
+        steps = rng.normal(0, 0.015, days)
+    elif ticker.startswith(("TU", "FV", "TY", "US", "WN")) and "Comdty" in ticker:
+        base = rng.uniform(100, 120)
+        steps = rng.normal(0, 0.15, days)
     elif "USYC" in ticker or "USGGBE" in ticker:
         base = rng.uniform(-50, 250) / 100
         steps = rng.normal(0, 0.04, days)
@@ -119,6 +140,12 @@ def generate_mock_series(ticker: str, days: int = DEFAULT_HISTORY_DAYS) -> pd.Se
     elif "LQD" in ticker or "HYG" in ticker:
         base = 110 if "LQD" in ticker else 80
         steps = rng.normal(0.01, 0.4, days)
+    elif "OAS" in ticker or "CDX" in ticker:
+        base = rng.uniform(60, 450)
+        steps = rng.normal(0, 4, days)
+    elif "CESI" in ticker:
+        base = rng.uniform(-30, 30)
+        steps = rng.normal(0, 2, days)
     elif "CPI" in ticker:
         base = 3.2
         steps = rng.normal(0, 0.05, days)
@@ -151,6 +178,10 @@ def generate_mock_series(ticker: str, days: int = DEFAULT_HISTORY_DAYS) -> pd.Se
         steps = rng.normal(0, 1, days)
 
     values = base + np.cumsum(steps)
+    if frequency == "release":
+        values = pd.Series(values, index=dates)
+        release_values = values.iloc[::21]
+        values = release_values.reindex(dates).ffill().bfill().to_numpy()
     return pd.Series(values, index=dates, name=ticker)
 
 
@@ -158,7 +189,7 @@ def fetch_dev(tickers: list[dict]) -> dict[str, pd.Series]:
     """모든 티커에 대해 mock 시계열 생성."""
     out = {}
     for t in tickers:
-        out[t["ticker"]] = generate_mock_series(t["ticker"])
+        out[t["ticker"]] = generate_mock_series(t["ticker"], frequency=t.get("frequency", "daily"))
     return out
 
 
@@ -193,56 +224,105 @@ def fetch_production(tickers: list[dict]) -> dict[str, pd.Series]:
 
     out: dict[str, pd.Series] = {}
 
+    try:
+        for t in tickers:
+            ticker = t["ticker"]
+            field = t.get("field", "PX_LAST")
+            request = refdata.createRequest("HistoricalDataRequest")
+            request.append("securities", ticker)
+            request.append("fields", field)
+            request.set("startDate", start_str)
+            request.set("endDate", end_str)
+            request.set("periodicitySelection", "DAILY")
+            if t.get("frequency", "daily") != "release":
+                request.set("nonTradingDayFillOption", "NON_TRADING_WEEKDAYS")
+                request.set("nonTradingDayFillMethod", "PREVIOUS_VALUE")
+
+            session.sendRequest(request)
+
+            records: list[tuple[date, float]] = []
+            while True:
+                ev = session.nextEvent(500)
+                for msg in ev:
+                    if not msg.hasElement("securityData"):
+                        continue
+                    sec_data = msg.getElement("securityData")
+                    if sec_data.hasElement("securityError"):
+                        print(f"  ⚠ {ticker}: securityError — {sec_data.getElement('securityError')}", file=sys.stderr)
+                        continue
+                    field_data = sec_data.getElement("fieldData")
+                    for i in range(field_data.numValues()):
+                        point = field_data.getValue(i)
+                        if not point.hasElement(field):
+                            continue
+                        d_raw = point.getElementAsDatetime("date")
+                        d = d_raw.date() if hasattr(d_raw, "date") else d_raw
+                        v = point.getElementAsFloat(field)
+                        records.append((d, v))
+                if ev.eventType() == blpapi.Event.RESPONSE:
+                    break
+
+            if records:
+                idx, vals = zip(*records)
+                out[ticker] = pd.Series(vals, index=pd.to_datetime(idx), name=ticker)
+            else:
+                out[ticker] = pd.Series([], dtype=float, name=ticker)
+                print(f"  ⚠ {ticker}: 데이터 없음", file=sys.stderr)
+    finally:
+        session.stop()
+    return out
+
+
+def validate_series_map(series_map: dict[str, pd.Series], tickers: list[dict], mode: str) -> dict:
+    """필수 데이터 누락, 관측치 부족, stale 여부를 검사."""
+    errors = []
+    warnings = []
+    today = date.today()
+
     for t in tickers:
         ticker = t["ticker"]
-        request = refdata.createRequest("HistoricalDataRequest")
-        request.append("securities", ticker)
-        request.append("fields", "PX_LAST")
-        request.set("startDate", start_str)
-        request.set("endDate", end_str)
-        request.set("periodicitySelection", "DAILY")
-        request.set("nonTradingDayFillOption", "NON_TRADING_WEEKDAYS")
-        request.set("nonTradingDayFillMethod", "PREVIOUS_VALUE")
+        series = series_map.get(ticker, pd.Series([], dtype=float)).dropna()
+        frequency = t.get("frequency", "daily")
+        min_obs = t.get("min_obs")
+        if min_obs is None:
+            min_obs = DEFAULT_RELEASE_MIN_OBS if frequency == "release" else DEFAULT_DAILY_MIN_OBS
+        stale_days = t.get("stale_days")
+        if stale_days is None:
+            stale_days = 70 if frequency == "release" else 7
 
-        session.sendRequest(request)
+        if series.empty:
+            msg = f"{ticker}: 데이터 없음"
+            (errors if t.get("required") else warnings).append(msg)
+            continue
 
-        records: list[tuple[date, float]] = []
-        while True:
-            ev = session.nextEvent(500)
-            for msg in ev:
-                if not msg.hasElement("securityData"):
-                    continue
-                sec_data = msg.getElement("securityData")
-                if sec_data.hasElement("securityError"):
-                    print(f"  ⚠ {ticker}: securityError — {sec_data.getElement('securityError')}", file=sys.stderr)
-                    continue
-                field_data = sec_data.getElement("fieldData")
-                for i in range(field_data.numValues()):
-                    point = field_data.getValue(i)
-                    if not point.hasElement("PX_LAST"):
-                        continue
-                    d = point.getElementAsDatetime("date").date() if hasattr(point.getElementAsDatetime("date"), "date") else point.getElementAsDatetime("date")
-                    v = point.getElementAsFloat("PX_LAST")
-                    records.append((d, v))
-            if ev.eventType() == blpapi.Event.RESPONSE:
-                break
+        if len(series) < int(min_obs):
+            msg = f"{ticker}: 관측치 부족 {len(series)} < {min_obs}"
+            (errors if t.get("required") else warnings).append(msg)
 
-        if records:
-            idx, vals = zip(*records)
-            out[ticker] = pd.Series(vals, index=pd.to_datetime(idx), name=ticker)
-        else:
-            out[ticker] = pd.Series([], dtype=float, name=ticker)
-            print(f"  ⚠ {ticker}: 데이터 없음", file=sys.stderr)
+        latest = series.index[-1]
+        latest_date = latest.date() if hasattr(latest, "date") else latest
+        age = (today - latest_date).days
+        if age > int(stale_days):
+            msg = f"{ticker}: latest {latest_date} stale {age}D > {stale_days}D"
+            (errors if t.get("required") else warnings).append(msg)
 
-    session.stop()
-    return out
+    if errors:
+        joined = "\n  - ".join(errors)
+        raise RuntimeError(f"필수 데이터 품질 게이트 실패 ({mode})\n  - {joined}")
+
+    return {
+        "checked_at": datetime.now().isoformat(timespec="seconds"),
+        "mode": mode,
+        "errors": errors,
+        "warnings": warnings,
+    }
 
 
 # ---------------------------------------------------------------------------
 # 저장
 # ---------------------------------------------------------------------------
 
-def save_snapshot(series_map: dict[str, pd.Series], tickers: list[dict], mode: str) -> Path:
+def save_snapshot(series_map: dict[str, pd.Series], tickers: list[dict], mode: str, quality: dict) -> Path:
     """
     오늘 자 JSON 스냅샷을 data/YYYY-MM-DD.json으로 저장.
     포맷:
@@ -263,12 +343,15 @@ def save_snapshot(series_map: dict[str, pd.Series], tickers: list[dict], mode: s
     }
     """
     config = load_tickers_config()
+    selected_tickers = {t["ticker"] for t in tickers}
 
     panels_out: dict[str, dict] = {}
     for panel_key, panel in config["panels"].items():
         panels_out[panel_key] = {"name": panel["name"], "tickers": {}}
         for s in panel["series"]:
             tk = s["ticker"]
+            if tk not in selected_tickers:
+                continue
             ts = series_map.get(tk, pd.Series([], dtype=float))
             history = [
                 {"date": str(d.date() if hasattr(d, "date") else d), "value": (None if pd.isna(v) else float(v))}
@@ -277,12 +360,14 @@ def save_snapshot(series_map: dict[str, pd.Series], tickers: list[dict], mode: s
             panels_out[panel_key]["tickers"][tk] = {
                 "label": s["label"],
                 "unit": s["unit"],
+                "frequency": s.get("frequency", "daily"),
                 "history": history,
             }
 
     payload = {
         "date": str(date.today()),
         "mode": mode,
+        "quality": quality,
         "panels": panels_out,
     }
 
@@ -300,19 +385,25 @@ def main():
     parser = argparse.ArgumentParser(description="Fetch Bloomberg data for macro dashboard")
     parser.add_argument("--mode", choices=["dev", "production"], default="dev",
                         help="dev: mock 데이터 (macOS 개발용) / production: blpapi 실데이터 (Windows 회사 PC)")
+    parser.add_argument("--tickers", choices=["all", "smoke"], default="all",
+                        help="all: 전체 티커 / smoke: 필수·핵심 티커만 빠르게 검증")
     args = parser.parse_args()
 
     config = load_tickers_config()
-    tickers = collect_all_tickers(config)
+    tickers = collect_all_tickers(config, selection=args.tickers)
 
-    print(f"[{datetime.now().isoformat(timespec='seconds')}] mode={args.mode}, tickers={len(tickers)}")
+    print(f"[{datetime.now().isoformat(timespec='seconds')}] mode={args.mode}, tickers={args.tickers}, count={len(tickers)}")
 
     if args.mode == "dev":
         series_map = fetch_dev(tickers)
     else:
         series_map = fetch_production(tickers)
 
-    out_path = save_snapshot(series_map, tickers, args.mode)
+    quality = validate_series_map(series_map, tickers, args.mode)
+    for warning in quality["warnings"]:
+        print(f"  ⚠ {warning}", file=sys.stderr)
+
+    out_path = save_snapshot(series_map, tickers, args.mode, quality)
     print(f"  saved → {out_path}")
 
 

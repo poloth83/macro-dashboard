@@ -76,3 +76,32 @@
 > "어제 시작한 매크로 대시보드 작업 이어서 진행. `plan.md`, `checklist.md`, `context-notes.md` 읽고 현재 상태 파악한 후, checklist에서 다음 미체크 항목부터 진행해줘. 현재는 회사 PC, Windows 10, Bloomberg Terminal 로그인된 상태."
 
 이러면 Phase 2부터 자동으로 이어짐.
+
+---
+
+## 2026-05-10 — v2 골격 보강 시작
+
+### 사용자 요청
+- 이전 리뷰에서 제안한 수정사항과 추가 아이디어를 모두 반영 요청.
+
+### 구현 범위
+- 외부 CDN 제거. 회사망에서 `cdn.jsdelivr.net`이 막혀도 차트가 보이도록 서버 렌더링 SVG sparkline으로 전환.
+- Bloomberg production 첫 연결을 위해 `--tickers smoke` 모드 추가.
+- 핵심 티커 누락/관측치 부족/latest date 지연 시 조용히 HTML을 publish하지 않도록 품질 게이트 추가.
+- 매크로 지표는 daily fill 통계가 왜곡될 수 있어 `frequency: release` 메타데이터를 추가하고 release 기준 통계로 분리.
+- 실제 운용 포지션을 반영해 Futures, SOFR/FOMC, Credit Hedge, Macro Surprise/Reaction 패널을 추가.
+
+### 제약
+- 현재 macOS에는 Bloomberg Terminal이 없으므로 production mode는 실행 검증 불가.
+- 일부 Bloomberg 티커는 회사 PC에서 `securityError`가 나올 수 있음. 이 경우 `bloomberg_tickers.yaml`에서 교체.
+
+### 구현 결과
+- Chart.js CDN 제거 완료. Sparkline은 `stats.py`에서 SVG polyline 좌표를 계산하고 template이 inline SVG로 렌더링.
+- `fetch_bloomberg.py --tickers smoke` 추가. 회사 PC에서는 핵심 14개 티커만 먼저 가져와 Bloomberg 연결과 권한을 빠르게 확인.
+- 필수 티커 품질 게이트 추가. required 티커가 비거나 관측치/stale 조건을 통과하지 못하면 snapshot 저장 전에 실패.
+- macro series는 `frequency: release`를 부여해 forward-fill 일별 통계가 아니라 release 관측치 기준으로 percentile/z-score 계산.
+- `UST Futures`, `SOFR / FOMC`, `Macro Surprise / Reaction` 패널 추가. Credit 패널은 LQD/HYG 외 OAS/CDX와 IG OAS vs equity beta derived 추가.
+- mock 검증 결과.
+  - `python fetch_bloomberg.py --mode dev --tickers smoke && python build_dashboard.py` 통과.
+  - `python fetch_bloomberg.py --mode dev --tickers all && python build_dashboard.py` 통과.
+  - full mock 기준 71개 unique ticker, 94개 metric card 렌더링.

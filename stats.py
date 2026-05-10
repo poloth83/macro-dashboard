@@ -9,10 +9,8 @@ build_dashboard.py가 이 결과를 받아 Jinja2 템플릿에 주입.
 from __future__ import annotations
 
 from dataclasses import dataclass, asdict
-from datetime import date, timedelta
-from typing import Sequence, Optional
+from typing import Optional
 
-import numpy as np
 import pandas as pd
 
 
@@ -30,7 +28,12 @@ class MetricStats:
     high_52w: Optional[float]
     low_52w: Optional[float]
     sparkline_6m: list[float]        # 오래된 → 최신 순 (차트용)
+    sparkline_points: str            # SVG polyline points
     as_of: Optional[str]             # ISO date
+    frequency: str                   # daily | release
+    change_1d_label: str
+    change_1w_label: str
+    change_1m_label: str
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -45,6 +48,15 @@ def _safe_change(series: pd.Series, days: int) -> Optional[float]:
     if pd.isna(current) or pd.isna(past):
         return None
     return float(current - past)
+
+
+def _release_series(series: pd.Series) -> pd.Series:
+    """발표 지표의 daily forward-fill 중복값을 제거해 실제 release 관측치에 가깝게 압축."""
+    clean = series.dropna().sort_index()
+    if clean.empty:
+        return clean
+    changed = clean.ne(clean.shift(1))
+    return clean[changed]
 
 
 def _percentile(series: pd.Series, current: float) -> Optional[float]:
@@ -70,6 +82,7 @@ def compute_metric(
     label: str,
     unit: str,
     timeseries: pd.Series,
+    frequency: str = "daily",
     window_3y_days: int = 252 * 3,
     window_52w_days: int = 252,
     window_6m_days: int = 126,
@@ -86,31 +99,81 @@ def compute_metric(
             change_1d=None, change_1w=None, change_1m=None,
             percentile_3y=None, zscore_3y=None,
             high_52w=None, low_52w=None,
-            sparkline_6m=[], as_of=None,
+            sparkline_6m=[], sparkline_points="", as_of=None,
+            frequency=frequency,
+            change_1d_label="Prev" if frequency == "release" else "1D",
+            change_1w_label="5 rel" if frequency == "release" else "1W",
+            change_1m_label="21 rel" if frequency == "release" else "1M",
         )
 
     series = timeseries.sort_index()
+    stats_series = _release_series(series) if frequency == "release" else series.dropna()
+    if stats_series.empty:
+        return MetricStats(
+            label=label, unit=unit, current=None,
+            change_1d=None, change_1w=None, change_1m=None,
+            percentile_3y=None, zscore_3y=None,
+            high_52w=None, low_52w=None,
+            sparkline_6m=[], sparkline_points="", as_of=None,
+            frequency=frequency,
+            change_1d_label="Prev" if frequency == "release" else "1D",
+            change_1w_label="5 rel" if frequency == "release" else "1W",
+            change_1m_label="21 rel" if frequency == "release" else "1M",
+        )
+
     current = float(series.iloc[-1]) if not pd.isna(series.iloc[-1]) else None
     as_of = str(series.index[-1].date()) if hasattr(series.index[-1], "date") else str(series.index[-1])
 
-    window_3y = series.tail(window_3y_days)
-    window_52w = series.tail(window_52w_days)
-    window_6m = series.tail(window_6m_days)
+    if frequency == "release":
+        current = float(stats_series.iloc[-1]) if not pd.isna(stats_series.iloc[-1]) else current
+        as_of = str(stats_series.index[-1].date()) if hasattr(stats_series.index[-1], "date") else str(stats_series.index[-1])
+        window_3y = stats_series.tail(36)
+        window_52w = stats_series.tail(12)
+        window_6m = stats_series.tail(12)
+    else:
+        window_3y = stats_series.tail(window_3y_days)
+        window_52w = stats_series.tail(window_52w_days)
+        window_6m = stats_series.tail(window_6m_days)
+
+    spark_values = [float(x) if not pd.isna(x) else None for x in window_6m.tolist()]
 
     return MetricStats(
         label=label,
         unit=unit,
         current=current,
-        change_1d=_safe_change(series, 1),
-        change_1w=_safe_change(series, 5),
-        change_1m=_safe_change(series, 21),
+        change_1d=_safe_change(stats_series, 1),
+        change_1w=_safe_change(stats_series, 5),
+        change_1m=_safe_change(stats_series, 21),
         percentile_3y=_percentile(window_3y, current) if current is not None else None,
         zscore_3y=_zscore(window_3y, current) if current is not None else None,
         high_52w=float(window_52w.max()) if not window_52w.empty else None,
         low_52w=float(window_52w.min()) if not window_52w.empty else None,
-        sparkline_6m=[float(x) if not pd.isna(x) else None for x in window_6m.tolist()],
+        sparkline_6m=spark_values,
+        sparkline_points=_sparkline_points(spark_values),
         as_of=as_of,
+        frequency=frequency,
+        change_1d_label="Prev" if frequency == "release" else "1D",
+        change_1w_label="5 rel" if frequency == "release" else "1W",
+        change_1m_label="21 rel" if frequency == "release" else "1M",
     )
+
+
+def _sparkline_points(values: list[Optional[float]], width: int = 180, height: int = 36) -> str:
+    """값 배열을 작은 SVG polyline 좌표 문자열로 변환."""
+    clean = [(i, v) for i, v in enumerate(values) if v is not None and not pd.isna(v)]
+    if len(clean) < 2:
+        return ""
+    nums = [v for _, v in clean]
+    lo = min(nums)
+    hi = max(nums)
+    span = hi - lo
+    x_den = max(len(values) - 1, 1)
+    points = []
+    for i, v in clean:
+        x = i / x_den * width
+        y = height / 2 if span == 0 else height - ((v - lo) / span * height)
+        points.append(f"{x:.1f},{y:.1f}")
+    return " ".join(points)
 
 
 def compute_panel(
@@ -132,6 +195,7 @@ def compute_panel(
             label=info["label"],
             unit=info["unit"],
             timeseries=info["timeseries"],
+            frequency=info.get("frequency", "daily"),
         )
         metrics.append(m.to_dict() | {"ticker": ticker})
     return {"name": panel_name, "metrics": metrics}

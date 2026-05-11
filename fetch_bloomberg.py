@@ -21,6 +21,10 @@ import numpy as np
 import pandas as pd
 import yaml
 
+if sys.platform == "win32":
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+
 
 # ---------------------------------------------------------------------------
 # 공통

@@ -22,6 +22,10 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 import stats as stats_mod
 
+if sys.platform == "win32":
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+
 
 ROOT = Path(__file__).parent
 DATA_DIR = ROOT / "data"

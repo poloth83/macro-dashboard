@@ -117,3 +117,46 @@
 - 원본 내용을 `agent-config/CLAUDE.md`에 그대로 추가.
 - 회사 PC에서 `powershell -ExecutionPolicy Bypass -File scripts\install_claude_md.ps1` 한 번으로 `%USERPROFILE%\.claude\CLAUDE.md`에 설치되도록 스크립트 추가.
 - 기존 회사 PC의 `CLAUDE.md`가 있으면 timestamp가 붙은 backup을 먼저 생성.
+
+---
+
+## 2026-05-11 — Phase 2 회사 PC 셋업
+
+### 환경 확인
+- Python 3.14.4, blpapi 3.26.3.1 이미 설치 상태. requirements.txt 의존성 전부 import 통과.
+- Bloomberg Terminal 로그인 상태에서 `blpapi.Session()` 정상 시작.
+
+### Smoke fetch 결과
+- `--tickers smoke`로 8개 명시 + required 합쳐 14개 ticker 가져옴. 모두 842 obs (3Y + buffer).
+- 최신 데이터 날짜 2026-05-11 = 오늘. stale 경고 0.
+
+### 전체 fetch 결과 (71 tickers)
+- 4개 invalid security 발견. 모두 non-required라 게이트 통과는 했지만 Phase 3에서 대체 ticker 식별 필요.
+  - `ARDRESBO Index` — Fed 지급준비금 잔고.
+  - `USTBTGA Index` — Treasury General Account.
+  - `RRPONTSY Index` — Reverse Repo Operations.
+  - `GDPNOW Index` — Atlanta Fed GDPNow.
+- `IORB Index`는 fetch 자체는 성공했지만 last_val=110.43으로 금리(%) 단위와 불일치. 다른 Bloomberg ticker로 교체 필요 추정.
+
+### 결정 1 — Windows 콘솔 UTF-8 reconfigure
+- 증상: `build_dashboard.py` 마지막 `print("✓ done")`에서 `UnicodeEncodeError: 'cp949' codec`로 크래시. `fetch_bloomberg.py`의 한글 경고문은 콘솔에서 깨져 보임.
+- 원인: Windows 한국어 로케일 cp949 콘솔이 UTF-8 문자 인코딩 못 함.
+- 대응: 두 entry-point 스크립트 상단에 `sys.stdout.reconfigure(encoding="utf-8")`/`sys.stderr.reconfigure(encoding="utf-8")` 블록 추가. Python 3.7+ 표준 API.
+- HTML 파일은 이미 `encoding="utf-8"`로 쓰고 있어 데이터 손상은 없었음. 콘솔 출력만 문제.
+
+### 다음 우선순위 (Phase 3 시작 전)
+1. 사내 IP HTTP 서버 띄워 동료 PC 접속 확인.
+2. 운용역 시각 검증 — invalid 4종 ticker 교체 + IORB 값 단위 점검.
+3. percentile/z-score 결과를 며칠 누적해서 보고 윈도우 사이즈 검토.
+
+### 핸드오프 (2026-05-11, CLI Claude Code → VS Code Claude Code)
+- **인계 시점 상태**: 4개 파일 modified, 미커밋. `build_dashboard.py` / `fetch_bloomberg.py` / `checklist.md` / `context-notes.md`.
+- **막힌 이유**: 회사 PC에 git identity 미설정 (`user.email`, `user.name`). CLAUDE.md "NEVER update git config" 규칙 때문에 에이전트가 직접 못 세팅. 사용자가 다음 명령 한 번 실행하면 풀림.
+  ```
+  git config user.email "poloth@naver.com" && git config user.name "poloth83"
+  ```
+- **그 뒤 이어서 할 일**:
+  1. `git add build_dashboard.py fetch_bloomberg.py checklist.md context-notes.md` 후 commit (메시지는 "Phase 2 회사 PC 셋업 완료 + Windows 콘솔 UTF-8 수정" 골자로).
+  2. `python -m http.server 8000 --directory output` 백그라운드 실행. 사내 IP는 `ipconfig`로 확인 후 동료에게 공유.
+  3. checklist Phase 2 마지막 항목 체크 처리.
+- **검증 끝난 사실**: blpapi production fetch 통과 (71 ticker, smoke 14 ticker, 4 invalid는 non-required라 게이트 통과). 빌드 후 `output/index.html` 208KB 생성.

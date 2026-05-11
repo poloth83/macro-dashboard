@@ -37,16 +37,17 @@
 - [x] git init + 첫 커밋
 - [x] GitHub private repo 생성 및 push
 
-## Phase 2 — 회사 PC 셋업 (Windows, 내일)
+## Phase 2 — 회사 PC 셋업 (Windows)
 
-- [ ] GitHub repo clone — `C:\Users\<user>\macro-dashboard\`
-- [ ] Python 3.11+ 설치 확인
-- [ ] `pip install -r requirements.txt` (blpapi 포함)
-- [ ] Bloomberg Terminal 로그인 상태 확인
-- [ ] `python fetch_bloomberg.py --mode production --tickers smoke` 으로 5개 정도 핵심 티커만 fetch 시도
-- [ ] 권한/티커명 오류 있으면 `bloomberg_tickers.yaml` 보정
-- [ ] 전체 fetch 1회 통과 → `data/YYYY-MM-DD.json` 생성 확인
-- [ ] `python build_dashboard.py` 통과 → `output/index.html` 생성 확인
+- [x] GitHub repo clone — `C:\Users\Hana_FI\claude code_ai\macro-dashboard\`
+- [x] Python 3.14 설치 확인 (jinja2/pandas/numpy/pyyaml/scipy/blpapi 3.26.3.1 모두 import)
+- [x] `pip install -r requirements.txt` (blpapi 포함)
+- [x] Bloomberg Terminal 로그인 상태 확인 (smoke fetch 성공으로 검증)
+- [x] `python fetch_bloomberg.py --mode production --tickers smoke` — 14개 티커 모두 842 obs 수신
+- [x] 전체 fetch 1회 통과 → `data/2026-05-11.json` 생성 확인 (71개 ticker, 4개 invalid 경고만 발생)
+- [x] `python build_dashboard.py` 통과 → `output/index.html` 생성 확인 (208KB)
+- [x] Windows 콘솔 cp949 인코딩 충돌 해결 (build_dashboard.py / fetch_bloomberg.py 양쪽 stdout/stderr UTF-8 reconfigure)
+- [ ] 권한/티커명 오류 있으면 `bloomberg_tickers.yaml` 보정 (Phase 3로 이월 — ARDRESBO / USTBTGA / RRPONTSY / GDPNOW / IORB 값 이상)
 - [ ] `python -m http.server 8000` 띄우고 사내 IP로 동료 PC에서 접속 확인
 
 ## Phase 3 — 데이터 검증 & 튜닝 (Windows)

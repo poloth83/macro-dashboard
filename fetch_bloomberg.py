@@ -68,6 +68,7 @@ def collect_all_tickers(config: dict, selection: str = "all") -> list[dict]:
                 "required": bool(s.get("required", False)),
                 "min_obs": s.get("min_obs"),
                 "stale_days": s.get("stale_days"),
+                "scale": float(s.get("scale", 1.0)),
             })
     return flat
 
@@ -127,18 +128,19 @@ def generate_mock_series(ticker: str, days: int = DEFAULT_HISTORY_DAYS, frequenc
         base = 70000
         steps = rng.normal(50, 1500, days)
     elif "FARBAST" in ticker:
-        base = 7200
-        steps = rng.normal(-1, 5, days)
-    elif "ARDRESBO" in ticker:
-        base = 3300
-        steps = rng.normal(0, 15, days)
-    elif "USTBTGA" in ticker:
-        base = 750
-        steps = rng.normal(0, 25, days)
-    elif "RRPONTSY" in ticker:
-        base = 400
-        steps = rng.normal(-1, 30, days)
-    elif "SOFRRATE" in ticker or "IORB" in ticker:
+        # H.4.1 raw values are in USD millions; yaml scale: 0.001 brings them to USD bn at save time.
+        base = 7_200_000
+        steps = rng.normal(-1000, 5000, days)
+    elif "FARBRBFB" in ticker:
+        base = 3_300_000
+        steps = rng.normal(0, 15_000, days)
+    elif "FARBDTRS" in ticker:
+        base = 750_000
+        steps = rng.normal(0, 25_000, days)
+    elif "FARWDEAL" in ticker:
+        base = 50_000
+        steps = rng.normal(-1000, 30_000, days)
+    elif "SOFRRATE" in ticker or "IRRBIOER" in ticker:
         base = 4.33
         steps = rng.normal(0, 0.005, days)
     elif "LQD" in ticker or "HYG" in ticker:
@@ -174,7 +176,7 @@ def generate_mock_series(ticker: str, days: int = DEFAULT_HISTORY_DAYS, frequenc
     elif "RST" in ticker:
         base = 0.4
         steps = rng.normal(0, 0.3, days)
-    elif "GDP" in ticker:
+    elif "GDP" in ticker or "GDGCAFJP" in ticker:
         base = 2.5
         steps = rng.normal(0, 0.2, days)
     else:
@@ -357,8 +359,9 @@ def save_snapshot(series_map: dict[str, pd.Series], tickers: list[dict], mode: s
             if tk not in selected_tickers:
                 continue
             ts = series_map.get(tk, pd.Series([], dtype=float))
+            scale = float(s.get("scale", 1.0))
             history = [
-                {"date": str(d.date() if hasattr(d, "date") else d), "value": (None if pd.isna(v) else float(v))}
+                {"date": str(d.date() if hasattr(d, "date") else d), "value": (None if pd.isna(v) else float(v) * scale)}
                 for d, v in ts.items()
             ]
             panels_out[panel_key]["tickers"][tk] = {

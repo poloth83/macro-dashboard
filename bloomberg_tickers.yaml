@@ -10,7 +10,7 @@ smoke_tickers:
   - "USGG2YR Index"
   - "USGG10YR Index"
   - "SOFRRATE Index"
-  - "IORB Index"
+  - "IRRBIOER Index"
   - "SPX Index"
   - "USDJPY Curncy"
   - "TY1 Comdty"
@@ -21,12 +21,12 @@ panels:
   liquidity:
     name: 달러 유동성
     series:
-      - {ticker: "FARBAST Index",  label: "Fed Balance Sheet", unit: "USD bn", stale_days: 10}
-      - {ticker: "ARDRESBO Index", label: "Reserve Balances", unit: "USD bn", stale_days: 10}
-      - {ticker: "USTBTGA Index",  label: "TGA", unit: "USD bn", stale_days: 10}
-      - {ticker: "RRPONTSY Index", label: "Overnight RRP", unit: "USD bn", stale_days: 10}
+      - {ticker: "FARBAST Index",  label: "Fed Balance Sheet", unit: "USD bn", stale_days: 10, scale: 0.001}
+      - {ticker: "FARBRBFB Index", label: "Reserve Balances", unit: "USD bn", stale_days: 10, scale: 0.001}
+      - {ticker: "FARBDTRS Index", label: "TGA", unit: "USD bn", stale_days: 10, scale: 0.001}
+      - {ticker: "FARWDEAL Index", label: "Overnight RRP", unit: "USD bn", stale_days: 10, scale: 0.001}
       - {ticker: "SOFRRATE Index", label: "SOFR", unit: "%", required: true}
-      - {ticker: "IORB Index", label: "IORB", unit: "%", required: true}
+      - {ticker: "IRRBIOER Index", label: "IORB", unit: "%", required: true}
 
   risk_regime:
     name: Risk Regime
@@ -130,7 +130,7 @@ panels:
       - {ticker: "CONSPXMD Index", label: "Michigan Inf Exp 1Y", unit: "%", frequency: "release", min_obs: 12}
       - {ticker: "RSTAMOM Index", label: "Retail Sales MoM", unit: "%", frequency: "release", min_obs: 12}
       - {ticker: "GDP CQOQ Index", label: "GDP QoQ Annualized", unit: "%", frequency: "release", min_obs: 8, stale_days: 120}
-      - {ticker: "GDPNOW Index", label: "Atlanta GDPNow", unit: "%", frequency: "release", min_obs: 8, stale_days: 21}
+      - {ticker: "GDGCAFJP Index", label: "Atlanta GDPNow", unit: "%", frequency: "release", min_obs: 8, stale_days: 21}
 
   macro_reaction:
     name: Macro Surprise / Reaction
@@ -142,7 +142,7 @@ panels:
       - {ticker: "SPX Index", label: "SPX Reaction", unit: "pt", required: true}
 
 derived:
-  - {name: "SOFR-IORB spread", formula: "SOFRRATE Index - IORB Index", unit: "bp"}
+  - {name: "SOFR-IORB spread", formula: "SOFRRATE Index - IRRBIOER Index", unit: "bp"}
   - {name: "10Y Swap Spread", formula: "USOSFR10 Curncy - USGG10YR Index", unit: "bp"}
   - {name: "5Y Swap Spread", formula: "USOSFR5 Curncy - USGG5YR Index", unit: "bp"}
   - {name: "2Y Swap Spread", formula: "USOSFR2 Curncy - USGG2YR Index", unit: "bp"}
@@ -154,8 +154,8 @@ derived:
   - {name: "SFR1 implied rate", formula: "100 - SFR1 Comdty", unit: "%"}
   - {name: "SFR2 implied rate", formula: "100 - SFR2 Comdty", unit: "%"}
   - {name: "SFR3 implied rate", formula: "100 - SFR3 Comdty", unit: "%"}
-  - {name: "SFR1-IORB gap", formula: "(100 - SFR1 Comdty) - IORB Index", unit: "bp"}
-  - {name: "SFR2-IORB gap", formula: "(100 - SFR2 Comdty) - IORB Index", unit: "bp"}
+  - {name: "SFR1-IORB gap", formula: "(100 - SFR1 Comdty) - IRRBIOER Index", unit: "bp"}
+  - {name: "SFR2-IORB gap", formula: "(100 - SFR2 Comdty) - IRRBIOER Index", unit: "bp"}
   - {name: "10Y Real (TIPS)", formula: "USGGT10Y Index", unit: "%"}
   - {name: "5Y Real (TIPS)", formula: "USGGT05Y Index", unit: "%"}
   - {name: "IG OAS beta vs SPX", type: "rolling_beta", y: "LUACOAS Index", x: "SPX Index", x_mode: "pct", window: 60, unit: "bp/%"}

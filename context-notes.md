@@ -160,3 +160,37 @@
   2. `python -m http.server 8000 --directory output` 백그라운드 실행. 사내 IP는 `ipconfig`로 확인 후 동료에게 공유.
   3. checklist Phase 2 마지막 항목 체크 처리.
 - **검증 끝난 사실**: blpapi production fetch 통과 (71 ticker, smoke 14 ticker, 4 invalid는 non-required라 게이트 통과). 빌드 후 `output/index.html` 208KB 생성.
+
+---
+
+## 2026-05-11 — Phase 3 진입 (1) Invalid ticker 5종 교체 + H.4.1 단위 보정
+
+### 배경
+- Phase 2에서 ARDRESBO / USTBTGA / RRPONTSY / GDPNOW 4종이 invalid security로 빈 시리즈로 들어왔고, IORB Index는 데이터는 들어왔지만 last=110.43으로 % 단위와 불일치.
+- 사용자가 Bloomberg Terminal에서 직접 검색해 valid ticker 회신.
+
+### 교체 매핑
+| 의미 | 이전 ticker (invalid/이상) | 신규 ticker | 검증 값 (2026-05-11) |
+|---|---|---|---|
+| Fed Reserve Balances | `ARDRESBO Index` | `FARBRBFB Index` | 3,032 USD bn |
+| Treasury General Account | `USTBTGA Index` | `FARBDTRS Index` | 878 USD bn |
+| Overnight RRP | `RRPONTSY Index` | `FARWDEAL Index` | 1.63 USD bn |
+| Atlanta GDPNow | `GDPNOW Index` | `GDGCAFJP Index` | 3.747 % |
+| IORB | `IORB Index` (값 110.43) | `IRRBIOER Index` | 3.65 % |
+
+### 결정 — yaml `scale` 필드 도입
+- Fed H.4.1 시리즈(`FARBAST`, `FARBRBFB`, `FARBDTRS`, `FARWDEAL`)는 Bloomberg에서 **raw 단위가 USD millions**로 들어옴. label은 "USD bn"이라 1000배 차이.
+- 옵션 A (yaml scale 필드 추가), B (label만 mn으로 변경), C (build에서 hard-coded scaling) 중 A 채택.
+- 구현: yaml 각 series에 `scale: 0.001` 선택 필드. `collect_all_tickers`에서 추출하고 `save_snapshot`이 history value에 곱해서 저장. default 1.0이라 기존 ticker는 영향 없음.
+- dev mock은 새 ticker 이름 분기(FARBRBFB/FARBDTRS/FARWDEAL)로 갱신 + base를 raw millions 단위로 조정해 production과 단위 체계 일관시킴.
+- derived 식 3곳(`SOFR-IORB spread`, `SFR1-IORB gap`, `SFR2-IORB gap`)의 ticker 참조도 `IRRBIOER Index`로 일괄 갱신.
+
+### 결정 — 셸 기본 `python`이 인접 프로젝트 venv를 가리킴
+- 증상: `python fetch_bloomberg.py` 실행 시 `ModuleNotFoundError: No module named 'yaml'`.
+- 원인: 셸 PATH 상의 `python`이 인접한 `macro_trade_ai/.venv`를 가리키고 있음. macro-dashboard deps는 자체 `macro-dashboard/.venv`에 설치됨.
+- 대응: fetch/build 실행 시 항상 `.venv/Scripts/python.exe`로 명시 호출. `scripts/run_daily.bat`은 이미 venv 활성화 후 호출하므로 자동화 경로엔 영향 없음 (확인은 Phase 4에서).
+
+### 검증 결과
+- 재fetch: 71 ticker, errors=0, warnings=0.
+- 5종 모두 합리적 값 + H.4.1 4종은 USD bn 단위로 표시됨.
+- 재빌드 통과, `output/index.html` 갱신.

@@ -47,11 +47,12 @@
 - [x] 전체 fetch 1회 통과 → `data/2026-05-11.json` 생성 확인 (71개 ticker, 4개 invalid 경고만 발생)
 - [x] `python build_dashboard.py` 통과 → `output/index.html` 생성 확인 (208KB)
 - [x] Windows 콘솔 cp949 인코딩 충돌 해결 (build_dashboard.py / fetch_bloomberg.py 양쪽 stdout/stderr UTF-8 reconfigure)
-- [ ] 권한/티커명 오류 있으면 `bloomberg_tickers.yaml` 보정 (Phase 3로 이월 — ARDRESBO / USTBTGA / RRPONTSY / GDPNOW / IORB 값 이상)
-- [ ] `python -m http.server 8000` 띄우고 사내 IP로 동료 PC에서 접속 확인
+- [x] 권한/티커명 오류 있으면 `bloomberg_tickers.yaml` 보정 (Phase 3에서 처리 완료 — Reserve Balances `FARBRBFB`, TGA `FARBDTRS`, RRP `FARWDEAL`, GDPNow `GDGCAFJP`, IORB `IRRBIOER`로 교체. H.4.1 4종은 raw millions라 `scale: 0.001` 적용해 USD bn으로 표시)
+- [x] `python -m http.server 8000` 띄우고 사내 IP로 동료 PC에서 접속 확인 (2026-05-11, http://10.155.41.52:8000, 로컬 200 확인 / 동료 PC 접속은 사용자 검증 필요)
 
 ## Phase 3 — 데이터 검증 & 튜닝 (Windows)
 
+- [x] Invalid ticker 5종 교체 (Reserve Balances / TGA / RRP / GDPNow / IORB) + H.4.1 단위(scale 0.001) 처리
 - [ ] 패널 A~H 각각 — 실데이터로 표시되는 값이 운용역 감각과 맞는지 검증
 - [ ] percentile/z-score 윈도우 적정성 검토 (3Y 기본 vs 5Y vs 1Y)
 - [ ] FOMC implied path 계산 로직 검증

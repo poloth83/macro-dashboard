@@ -194,3 +194,27 @@
 - 재fetch: 71 ticker, errors=0, warnings=0.
 - 5종 모두 합리적 값 + H.4.1 4종은 USD bn 단위로 표시됨.
 - 재빌드 통과, `output/index.html` 갱신.
+
+---
+
+## 2026-05-11 — Phase 3 (2) Credit 패널 단위/티커 보정
+
+### 배경
+- 패널 A~H 운용역 시각 검증을 위해 모든 metric(71 ticker + 19 derived)을 표로 dump해 1차 sanity-check.
+- Credit 패널에서 3가지 명백한 이상값 발견.
+
+### 발견과 해법
+
+| 메트릭 | 이상값 (직전) | 진단 | 해법 | 결과 |
+|---|---|---|---|---|
+| US IG OAS | 1bp | Bloomberg가 % 단위로 송신 (raw 0.77) | yaml `scale: 100` | 77bp |
+| US HY OAS | 3bp | 위와 동일 (raw 2.66) | yaml `scale: 100` | 266bp |
+| CDX HY 5Y | 107bp | `CDX HY CDSI GEN 5Y Corp`은 price quote (par+premium), spread 아님 | ticker `CDX HY CDSI GEN 5Y SPRD Corp`로 교체 | 323bp |
+
+### 부수효과
+- derived `IG OAS beta vs SPX/NDX/RTY` 3종이 -0.01 bp/%에서 -0.6~-0.9 bp/% 범위로 정상화 (음의 beta = 주식↑ → spread↓, 정상 관계).
+- mock 분기에 LUACOAS/LF98OAS를 명시 분기로 분리해 base를 % 단위로 두고 production과 단위 체계 일관시킴. CDX는 base 그대로 bp.
+
+### 나머지 패널 1차 검토 결과 (사용자 시각 검증 보조)
+- UST 커브/슬로프/버터플라이, BEI/TIPS, Swap spread, 글로벌 듀레이션, FX, 매크로 release 지표 — 모두 합리적 범위.
+- 운용역 시각 검증 자체는 여전히 사용자가 브라우저로 패널 레이아웃/색상까지 보면서 짚어야 할 영역.

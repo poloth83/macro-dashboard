@@ -108,10 +108,10 @@ panels:
     series:
       - {ticker: "LQD US Equity", label: "LQD (IG ETF)", unit: "USD"}
       - {ticker: "HYG US Equity", label: "HYG (HY ETF)", unit: "USD"}
-      - {ticker: "LUACOAS Index", label: "US IG OAS", unit: "bp"}
-      - {ticker: "LF98OAS Index", label: "US HY OAS", unit: "bp"}
+      - {ticker: "LUACOAS Index", label: "US IG OAS", unit: "bp", scale: 100}
+      - {ticker: "LF98OAS Index", label: "US HY OAS", unit: "bp", scale: 100}
       - {ticker: "CDX IG CDSI GEN 5Y Corp", label: "CDX IG 5Y", unit: "bp"}
-      - {ticker: "CDX HY CDSI GEN 5Y Corp", label: "CDX HY 5Y", unit: "bp"}
+      - {ticker: "CDX HY CDSI GEN 5Y SPRD Corp", label: "CDX HY 5Y", unit: "bp"}
 
   macro:
     name: 매크로 지표

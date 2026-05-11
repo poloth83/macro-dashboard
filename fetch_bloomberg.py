@@ -146,7 +146,14 @@ def generate_mock_series(ticker: str, days: int = DEFAULT_HISTORY_DAYS, frequenc
     elif "LQD" in ticker or "HYG" in ticker:
         base = 110 if "LQD" in ticker else 80
         steps = rng.normal(0.01, 0.4, days)
-    elif "OAS" in ticker or "CDX" in ticker:
+    elif "LUACOAS" in ticker:
+        # raw values are in % (yaml scale: 100 brings them to bp at save time)
+        base = rng.uniform(0.7, 1.5)
+        steps = rng.normal(0, 0.04, days)
+    elif "LF98OAS" in ticker:
+        base = rng.uniform(2.5, 5.0)
+        steps = rng.normal(0, 0.05, days)
+    elif "CDX" in ticker:
         base = rng.uniform(60, 450)
         steps = rng.normal(0, 4, days)
     elif "CESI" in ticker:

@@ -53,7 +53,8 @@
 ## Phase 3 — 데이터 검증 & 튜닝 (Windows)
 
 - [x] Invalid ticker 5종 교체 (Reserve Balances / TGA / RRP / GDPNow / IORB) + H.4.1 단위(scale 0.001) 처리
-- [ ] 패널 A~H 각각 — 실데이터로 표시되는 값이 운용역 감각과 맞는지 검증
+- [x] Credit 패널 보정 — LUACOAS/LF98OAS는 raw가 %라 scale 100으로 bp 변환, CDX HY는 spread 버전 ticker(`CDX HY CDSI GEN 5Y SPRD Corp`)로 교체. IG OAS beta 3종도 자동 정상화
+- [ ] 패널 A~H 각각 — 실데이터로 표시되는 값이 운용역 감각과 맞는지 검증 (Credit 외 나머지는 1차 dump에서 정상 범위 확인. 사용자 시각 검증 남음)
 - [ ] percentile/z-score 윈도우 적정성 검토 (3Y 기본 vs 5Y vs 1Y)
 - [ ] FOMC implied path 계산 로직 검증
 - [ ] 가중치 / 차트 스케일 / 색상 등 시각 튜닝

@@ -35,7 +35,7 @@ TICKERS_PATH = ROOT / "bloomberg_tickers.yaml"
 DATA_DIR = ROOT / "data"
 DATA_DIR.mkdir(exist_ok=True)
 
-DEFAULT_HISTORY_DAYS = 252 * 3 + 30  # 3Y + buffer
+DEFAULT_HISTORY_DAYS = 252 * 5 + 30  # 5Y + buffer (정책금리·실질금리 5Y 윈도우 통계 수용)
 DEFAULT_DAILY_MIN_OBS = 200
 DEFAULT_RELEASE_MIN_OBS = 12
 

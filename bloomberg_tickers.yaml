@@ -25,8 +25,8 @@ panels:
       - {ticker: "FARBRBFB Index", label: "Reserve Balances", unit: "USD bn", stale_days: 10, scale: 0.001}
       - {ticker: "FARBDTRS Index", label: "TGA", unit: "USD bn", stale_days: 10, scale: 0.001}
       - {ticker: "FARWDEAL Index", label: "Overnight RRP", unit: "USD bn", stale_days: 10, scale: 0.001}
-      - {ticker: "SOFRRATE Index", label: "SOFR", unit: "%", required: true}
-      - {ticker: "IRRBIOER Index", label: "IORB", unit: "%", required: true}
+      - {ticker: "SOFRRATE Index", label: "SOFR", unit: "%", required: true, window_years: 5}
+      - {ticker: "IRRBIOER Index", label: "IORB", unit: "%", required: true, window_years: 5}
 
   risk_regime:
     name: Risk Regime
@@ -62,20 +62,20 @@ panels:
   sofr_fomc:
     name: SOFR / FOMC
     series:
-      - {ticker: "SFR1 Comdty", label: "SOFR Fut 1st", unit: "px", required: true}
-      - {ticker: "SFR2 Comdty", label: "SOFR Fut 2nd", unit: "px"}
-      - {ticker: "SFR3 Comdty", label: "SOFR Fut 3rd", unit: "px"}
-      - {ticker: "SFR4 Comdty", label: "SOFR Fut 4th", unit: "px"}
-      - {ticker: "SFR5 Comdty", label: "SOFR Fut 5th", unit: "px"}
-      - {ticker: "SFR6 Comdty", label: "SOFR Fut 6th", unit: "px"}
+      - {ticker: "SFR1 Comdty", label: "SOFR Fut 1st", unit: "px", required: true, window_years: 5}
+      - {ticker: "SFR2 Comdty", label: "SOFR Fut 2nd", unit: "px", window_years: 5}
+      - {ticker: "SFR3 Comdty", label: "SOFR Fut 3rd", unit: "px", window_years: 5}
+      - {ticker: "SFR4 Comdty", label: "SOFR Fut 4th", unit: "px", window_years: 5}
+      - {ticker: "SFR5 Comdty", label: "SOFR Fut 5th", unit: "px", window_years: 5}
+      - {ticker: "SFR6 Comdty", label: "SOFR Fut 6th", unit: "px", window_years: 5}
 
   real_bei:
     name: 실질금리 & BEI
     series:
       - {ticker: "USGGBE05 Index", label: "5Y BEI", unit: "%"}
       - {ticker: "USGGBE10 Index", label: "10Y BEI", unit: "%", required: true}
-      - {ticker: "USGGT05Y Index", label: "5Y TIPS yield", unit: "%"}
-      - {ticker: "USGGT10Y Index", label: "10Y TIPS yield", unit: "%", required: true}
+      - {ticker: "USGGT05Y Index", label: "5Y TIPS yield", unit: "%", window_years: 5}
+      - {ticker: "USGGT10Y Index", label: "10Y TIPS yield", unit: "%", required: true, window_years: 5}
       - {ticker: "USGG5Y5Y Index", label: "5Y5Y BEI", unit: "%"}
 
   swap_spread:
@@ -142,7 +142,7 @@ panels:
       - {ticker: "SPX Index", label: "SPX Reaction", unit: "pt", required: true}
 
 derived:
-  - {name: "SOFR-IORB spread", formula: "SOFRRATE Index - IRRBIOER Index", unit: "bp"}
+  - {name: "SOFR-IORB spread", formula: "SOFRRATE Index - IRRBIOER Index", unit: "bp", window_years: 5}
   - {name: "10Y Swap Spread", formula: "USOSFR10 Curncy - USGG10YR Index", unit: "bp"}
   - {name: "5Y Swap Spread", formula: "USOSFR5 Curncy - USGG5YR Index", unit: "bp"}
   - {name: "2Y Swap Spread", formula: "USOSFR2 Curncy - USGG2YR Index", unit: "bp"}
@@ -151,13 +151,13 @@ derived:
   - {name: "OAT-Bund 10Y", formula: "GFRN10 Index - GDBR10 Index", unit: "bp"}
   - {name: "3M10Y slope", formula: "USGG10YR Index - USGG3M Index", unit: "bp"}
   - {name: "2/5/10 butterfly", formula: "2*USGG5YR Index - USGG2YR Index - USGG10YR Index", unit: "bp"}
-  - {name: "SFR1 implied rate", formula: "100 - SFR1 Comdty", unit: "%"}
-  - {name: "SFR2 implied rate", formula: "100 - SFR2 Comdty", unit: "%"}
-  - {name: "SFR3 implied rate", formula: "100 - SFR3 Comdty", unit: "%"}
-  - {name: "SFR1-IORB gap", formula: "(100 - SFR1 Comdty) - IRRBIOER Index", unit: "bp"}
-  - {name: "SFR2-IORB gap", formula: "(100 - SFR2 Comdty) - IRRBIOER Index", unit: "bp"}
-  - {name: "10Y Real (TIPS)", formula: "USGGT10Y Index", unit: "%"}
-  - {name: "5Y Real (TIPS)", formula: "USGGT05Y Index", unit: "%"}
+  - {name: "SFR1 implied rate", formula: "100 - SFR1 Comdty", unit: "%", window_years: 5}
+  - {name: "SFR2 implied rate", formula: "100 - SFR2 Comdty", unit: "%", window_years: 5}
+  - {name: "SFR3 implied rate", formula: "100 - SFR3 Comdty", unit: "%", window_years: 5}
+  - {name: "SFR1-IORB gap", formula: "(100 - SFR1 Comdty) - IRRBIOER Index", unit: "bp", window_years: 5}
+  - {name: "SFR2-IORB gap", formula: "(100 - SFR2 Comdty) - IRRBIOER Index", unit: "bp", window_years: 5}
+  - {name: "10Y Real (TIPS)", formula: "USGGT10Y Index", unit: "%", window_years: 5}
+  - {name: "5Y Real (TIPS)", formula: "USGGT05Y Index", unit: "%", window_years: 5}
   - {name: "IG OAS beta vs SPX", type: "rolling_beta", y: "LUACOAS Index", x: "SPX Index", x_mode: "pct", window: 60, unit: "bp/%"}
   - {name: "IG OAS beta vs NDX", type: "rolling_beta", y: "LUACOAS Index", x: "NDX Index", x_mode: "pct", window: 60, unit: "bp/%"}
   - {name: "IG OAS beta vs RTY", type: "rolling_beta", y: "LUACOAS Index", x: "RTY Index", x_mode: "pct", window: 60, unit: "bp/%"}

@@ -81,6 +81,7 @@ def compute_panels(snapshot: dict, series_map: dict[str, pd.Series]) -> list[dic
                 "label": s["label"],
                 "unit": s["unit"],
                 "frequency": s.get("frequency", "daily"),
+                "window_years": int(s.get("window_years", 3)),
                 "timeseries": series_map.get(tk, pd.Series([], dtype=float)),
             }
         result = stats_mod.compute_panel(panel_def["name"], series_for_panel)
@@ -119,7 +120,7 @@ def compute_derivations(series_map: dict[str, pd.Series]) -> list[dict]:
         # bp 단위는 100배 스케일 (백분율 차이를 bp로)
         if unit == "bp":
             series = series * 100.0
-        out.append(stats_mod.compute_derived(name, unit, series))
+        out.append(stats_mod.compute_derived(name, unit, series, window_years=int(d.get("window_years", 3))))
 
     return out
 

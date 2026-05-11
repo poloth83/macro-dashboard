@@ -23,8 +23,9 @@ class MetricStats:
     change_1d: Optional[float]
     change_1w: Optional[float]
     change_1m: Optional[float]
-    percentile_3y: Optional[float]   # 0~100
-    zscore_3y: Optional[float]
+    percentile: Optional[float]      # 0~100, window_years 기준
+    zscore: Optional[float]
+    window_years: int                # 3 or 5 등, 카드 라벨 동적 표시용
     high_52w: Optional[float]
     low_52w: Optional[float]
     sparkline_6m: list[float]        # 오래된 → 최신 순 (차트용)
@@ -83,7 +84,7 @@ def compute_metric(
     unit: str,
     timeseries: pd.Series,
     frequency: str = "daily",
-    window_3y_days: int = 252 * 3,
+    window_years: int = 3,
     window_52w_days: int = 252,
     window_6m_days: int = 126,
 ) -> MetricStats:
@@ -92,12 +93,15 @@ def compute_metric(
 
     Args:
         timeseries: index가 datetime인 일별 시계열. 결측치는 그대로 두고 함수 내에서 처리.
+        window_years: percentile/z-score 계산용 lookback. 정책금리·실질금리처럼
+            사이클이 긴 메트릭은 5로, 기본은 3. release 빈도는 월 단위 12 obs/year로 환산.
     """
-    if timeseries.empty:
+    def empty() -> MetricStats:
         return MetricStats(
             label=label, unit=unit, current=None,
             change_1d=None, change_1w=None, change_1m=None,
-            percentile_3y=None, zscore_3y=None,
+            percentile=None, zscore=None,
+            window_years=window_years,
             high_52w=None, low_52w=None,
             sparkline_6m=[], sparkline_points="", as_of=None,
             frequency=frequency,
@@ -106,20 +110,13 @@ def compute_metric(
             change_1m_label="21 rel" if frequency == "release" else "1M",
         )
 
+    if timeseries.empty:
+        return empty()
+
     series = timeseries.sort_index()
     stats_series = _release_series(series) if frequency == "release" else series.dropna()
     if stats_series.empty:
-        return MetricStats(
-            label=label, unit=unit, current=None,
-            change_1d=None, change_1w=None, change_1m=None,
-            percentile_3y=None, zscore_3y=None,
-            high_52w=None, low_52w=None,
-            sparkline_6m=[], sparkline_points="", as_of=None,
-            frequency=frequency,
-            change_1d_label="Prev" if frequency == "release" else "1D",
-            change_1w_label="5 rel" if frequency == "release" else "1W",
-            change_1m_label="21 rel" if frequency == "release" else "1M",
-        )
+        return empty()
 
     current = float(series.iloc[-1]) if not pd.isna(series.iloc[-1]) else None
     as_of = str(series.index[-1].date()) if hasattr(series.index[-1], "date") else str(series.index[-1])
@@ -127,11 +124,11 @@ def compute_metric(
     if frequency == "release":
         current = float(stats_series.iloc[-1]) if not pd.isna(stats_series.iloc[-1]) else current
         as_of = str(stats_series.index[-1].date()) if hasattr(stats_series.index[-1], "date") else str(stats_series.index[-1])
-        window_3y = stats_series.tail(36)
+        window_stats = stats_series.tail(12 * window_years)
         window_52w = stats_series.tail(12)
         window_6m = stats_series.tail(12)
     else:
-        window_3y = stats_series.tail(window_3y_days)
+        window_stats = stats_series.tail(252 * window_years)
         window_52w = stats_series.tail(window_52w_days)
         window_6m = stats_series.tail(window_6m_days)
 
@@ -144,8 +141,9 @@ def compute_metric(
         change_1d=_safe_change(stats_series, 1),
         change_1w=_safe_change(stats_series, 5),
         change_1m=_safe_change(stats_series, 21),
-        percentile_3y=_percentile(window_3y, current) if current is not None else None,
-        zscore_3y=_zscore(window_3y, current) if current is not None else None,
+        percentile=_percentile(window_stats, current) if current is not None else None,
+        zscore=_zscore(window_stats, current) if current is not None else None,
+        window_years=window_years,
         high_52w=float(window_52w.max()) if not window_52w.empty else None,
         low_52w=float(window_52w.min()) if not window_52w.empty else None,
         sparkline_6m=spark_values,
@@ -184,7 +182,7 @@ def compute_panel(
     한 패널 내의 모든 시리즈에 대해 compute_metric을 적용.
 
     Args:
-        series_map: {ticker: {"label": str, "unit": str, "timeseries": pd.Series}, ...}
+        series_map: {ticker: {"label": str, "unit": str, "timeseries": pd.Series, "window_years": int}, ...}
 
     Returns:
         {"name": panel_name, "metrics": [MetricStats.to_dict(), ...]}
@@ -196,6 +194,7 @@ def compute_panel(
             unit=info["unit"],
             timeseries=info["timeseries"],
             frequency=info.get("frequency", "daily"),
+            window_years=int(info.get("window_years", 3)),
         )
         metrics.append(m.to_dict() | {"ticker": ticker})
     return {"name": panel_name, "metrics": metrics}
@@ -205,7 +204,8 @@ def compute_derived(
     name: str,
     unit: str,
     formula_series: pd.Series,
+    window_years: int = 3,
 ) -> dict:
     """파생 메트릭 (BTP-Bund, swap spread 등)도 동일 통계 세트로."""
-    m = compute_metric(label=name, unit=unit, timeseries=formula_series)
+    m = compute_metric(label=name, unit=unit, timeseries=formula_series, window_years=window_years)
     return m.to_dict() | {"ticker": name}

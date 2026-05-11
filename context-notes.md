@@ -218,3 +218,34 @@
 ### 나머지 패널 1차 검토 결과 (사용자 시각 검증 보조)
 - UST 커브/슬로프/버터플라이, BEI/TIPS, Swap spread, 글로벌 듀레이션, FX, 매크로 release 지표 — 모두 합리적 범위.
 - 운용역 시각 검증 자체는 여전히 사용자가 브라우저로 패널 레이아웃/색상까지 보면서 짚어야 할 영역.
+
+---
+
+## 2026-05-11 — Phase 3 (3) percentile/z-score 윈도우 메트릭별 분리
+
+### 배경
+- plan.md 결정 9: "기본 3Y, 정책금리·실질금리는 5Y 병기 (사이클이 더 길기 때문)".
+- 기존 stats.py는 전 메트릭 3Y 단일 윈도우, template "3Y %ile"/"3Y z" 라벨 하드코딩.
+
+### 결정 — 메트릭별 단일 윈도우 (병기 X)
+- yaml series/derived에 선택 필드 `window_years` 추가. 미설정 시 3.
+- 카드 라벨은 `{{ m.window_years }}Y %ile` / `{{ m.window_years }}Y z`로 동적.
+- "병기"보다 단일 윈도우가 카드 정보량을 유지하면서도 plan 의도를 충족. 토글이 필요해지면 v2로 이월.
+
+### 적용 범위 (정책금리 / 실질금리)
+- liquidity 패널: SOFRRATE, IRRBIOER (모두 required true)
+- sofr_fomc 패널: SFR1~SFR6 Comdty (6종, SFR1만 required)
+- real_bei 패널: USGGT05Y, USGGT10Y
+- derived 8종: SOFR-IORB spread, SFR1/2/3 implied rate, SFR1/2-IORB gap, 10Y/5Y Real (TIPS)
+- 총 10 series + 8 derived = 18개 메트릭이 5Y 윈도우
+
+### 코드 변경 핵심
+- `stats.MetricStats`: `percentile_3y` → `percentile`, `zscore_3y` → `zscore`로 리네임. 윈도우가 동적이라 3Y가 불변 의미를 갖지 않음. `window_years` 필드 추가.
+- `compute_metric`: 파라미터 `window_years: int = 3`. release 빈도는 12 obs/year로 환산해 `tail(12 * window_years)`.
+- `fetch_bloomberg.DEFAULT_HISTORY_DAYS`: 252×3+30 → 252×5+30 (5Y 윈도우에 데이터 부족 방지). 실제 fetch 결과 1,382 obs.
+- `templates/index.html.j2`: 패널 + derived 2곳에 동일 라벨 패턴 적용.
+
+### 검증
+- 재fetch+재빌드 quality 0/0.
+- 18개 메트릭이 5Y로 표시됨을 dump로 확인.
+- 의미 있는 변화 예: IORB z-score -1.65σ(3Y) → -0.01σ(5Y). 5Y 윈도우가 저금리 사이클까지 포함하면서 현재 3.65%가 평균에 가까운 위치로 재평가.

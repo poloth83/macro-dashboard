@@ -47,7 +47,7 @@
     <h2>{{ panel.name }}</h2>
     <div class="grid">
       {% for m in panel.metrics %}
-      <article class="metric {{ m.zscore_3y | color_z }}">
+      <article class="metric {{ m.zscore | color_z }}">
         <header>
           <div class="label">{{ m.label }}</div>
           <div class="ticker">{{ m.ticker }}</div>
@@ -60,12 +60,12 @@
         </div>
         <div class="stats-row">
           <div class="stat">
-            <span class="stat-label">3Y %ile</span>
-            <span class="stat-value">{{ m.percentile_3y | fmt_pct }}</span>
+            <span class="stat-label">{{ m.window_years }}Y %ile</span>
+            <span class="stat-value">{{ m.percentile | fmt_pct }}</span>
           </div>
           <div class="stat">
-            <span class="stat-label">3Y z</span>
-            <span class="stat-value">{{ m.zscore_3y | fmt_z }}</span>
+            <span class="stat-label">{{ m.window_years }}Y z</span>
+            <span class="stat-value">{{ m.zscore | fmt_z }}</span>
           </div>
         </div>
         <div class="range-row">
@@ -91,7 +91,7 @@
     <h2>Derived — Spreads &amp; Slopes</h2>
     <div class="grid">
       {% for m in derived %}
-      <article class="metric {{ m.zscore_3y | color_z }}">
+      <article class="metric {{ m.zscore | color_z }}">
         <header>
           <div class="label">{{ m.label }}</div>
           <div class="ticker">derived</div>
@@ -104,12 +104,12 @@
         </div>
         <div class="stats-row">
           <div class="stat">
-            <span class="stat-label">3Y %ile</span>
-            <span class="stat-value">{{ m.percentile_3y | fmt_pct }}</span>
+            <span class="stat-label">{{ m.window_years }}Y %ile</span>
+            <span class="stat-value">{{ m.percentile | fmt_pct }}</span>
           </div>
           <div class="stat">
-            <span class="stat-label">3Y z</span>
-            <span class="stat-value">{{ m.zscore_3y | fmt_z }}</span>
+            <span class="stat-label">{{ m.window_years }}Y z</span>
+            <span class="stat-value">{{ m.zscore | fmt_z }}</span>
           </div>
         </div>
         <div class="range-row">

@@ -151,11 +151,10 @@ derived:
   - {name: "OAT-Bund 10Y", formula: "GFRN10 Index - GDBR10 Index", unit: "bp"}
   - {name: "3M10Y slope", formula: "USGG10YR Index - USGG3M Index", unit: "bp"}
   - {name: "2/5/10 butterfly", formula: "2*USGG5YR Index - USGG2YR Index - USGG10YR Index", unit: "bp"}
-  - {name: "SFR1 implied rate", formula: "100 - SFR1 Comdty", unit: "%", window_years: 5}
-  - {name: "SFR2 implied rate", formula: "100 - SFR2 Comdty", unit: "%", window_years: 5}
-  - {name: "SFR3 implied rate", formula: "100 - SFR3 Comdty", unit: "%", window_years: 5}
-  - {name: "SFR1-IORB gap", formula: "(100 - SFR1 Comdty) - IRRBIOER Index", unit: "bp", window_years: 5}
-  - {name: "SFR2-IORB gap", formula: "(100 - SFR2 Comdty) - IRRBIOER Index", unit: "bp", window_years: 5}
+  # SFR implied rate / SFR-IORB gap derived는 제거됨 (2026-05-12).
+  # 사유: SFR{1,2,3} Comdty는 generic rolling 3M SOFR future로, 정산식이 "다음 IMM 분기 평균 SOFR"이라
+  # "다음 FOMC implied rate"와 의미가 다름. WIRP-style 회의별 implied rate는 Bloomberg API로 노출되지
+  # 않음을 probe (scripts/probe_fomc_implied.py)로 확인. 향후 FF futures decomposition이 필요해지면 별도 구현.
   - {name: "10Y Real (TIPS)", formula: "USGGT10Y Index", unit: "%", window_years: 5}
   - {name: "5Y Real (TIPS)", formula: "USGGT05Y Index", unit: "%", window_years: 5}
   - {name: "IG OAS beta vs SPX", type: "rolling_beta", y: "LUACOAS Index", x: "SPX Index", x_mode: "pct", window: 60, unit: "bp/%"}

@@ -249,3 +249,35 @@
 - 재fetch+재빌드 quality 0/0.
 - 18개 메트릭이 5Y로 표시됨을 dump로 확인.
 - 의미 있는 변화 예: IORB z-score -1.65σ(3Y) → -0.01σ(5Y). 5Y 윈도우가 저금리 사이클까지 포함하면서 현재 3.65%가 평균에 가까운 위치로 재평가.
+
+---
+
+## 2026-05-12 — Phase 3 (4) FOMC implied path 검증 & SFR derived 제거
+
+### 발견 (의미상 문제)
+- 기존 derived: `SFR1/2/3 implied rate = 100 - SFR{N} Comdty`, `SFR1/2-IORB gap = (100 - SFR{N}) - IRRBIOER`.
+- 카드 라벨이 "다음 FOMC implied rate"로 해석될 여지가 있었으나 사실 다름.
+- 3M SOFR future 정산식 = **reference quarter 내 daily SOFR의 산술평균**. 즉 SFR1 implied는 "다음 IMM 분기(예: 2026-06-17 ~ 2026-09-15) 평균 SOFR"이고, 그 안에 보통 1~2개의 FOMC가 포함됨. 단일 회의 implied가 아님.
+- 운용역이 "SFR1-IORB gap = -10bp"를 "다음 회의에서 10bp 인하 기대"로 읽으면 틀린 해석이 됨.
+
+### 사용자 선택 — B-1만 시도 후 안 되면 중단
+- 옵션 A(이름 보정), B-1(Bloomberg 내부 implied field 직접 조회), B-2(FF futures decomposition), D(제거) 중 B-1 우선 시도, fallback 없이 중단으로 결정.
+- 디스플레이 의도는 12회 FOMC 커버 + 카드 N개 + 라인차트 1개였으나 데이터 확보가 선행 조건.
+
+### B-1 probe 결과 (`scripts/probe_fomc_implied.py`)
+- Phase 1 (apiFLDS FieldSearchRequest, 키워드 6종 FOMC/WIRP/MEETING_IMPLIED/IMPLIED_FED/FED_TARGET_PROB/OIS_IMPLIED): 모두 0 hit. FieldSearchRequest 스키마 호출이 부정확할 가능성도 있으나 0 결과 자체는 강한 신호.
+- Phase 2 (ReferenceDataRequest, 17개 candidate field × 4 securities FDTR/FDTRMID/FEDL01/USRINDEX Index): 17개 전부 `Field not valid`. WIRP/MEETING/OIS_IMPLIED/25bp probability 계열 모두 인식 안 됨.
+- 결론: entitlement 문제가 아니라 **Bloomberg API 구조상 WIRP-style 회의별 implied rate가 단일 field로 노출되지 않음**. WIRP는 Terminal 애플리케이션이 OIS 커브로부터 step-function 분해해 그리는 계산물.
+
+### 결정 — D안 채택 (derived 제거)
+- yaml `derived` 섹션에서 5종 제거: SFR1/2/3 implied rate + SFR1/2-IORB gap.
+- 자리에는 사유 주석 남겨 미래 세션이 "왜 없는지" 즉시 파악하도록.
+- sofr_fomc 패널의 SFR1~SFR6 Comdty raw 카드는 유지 (선물 가격 자체는 정확한 정보).
+- probe 스크립트는 `scripts/probe_fomc_implied.py`에 유지 — 향후 다른 Bloomberg 필드 probe 시 재활용 가능.
+
+### 검증
+- 재빌드 통과. derived 카드 수 19 → 14. SFR 검색에 derived hit 0건.
+- sofr_fomc 패널 SFR1~6 카드는 그대로 표시됨.
+
+### 향후 (FOMC implied path 필요해지면)
+- B-2 (FF futures decomposition) 경로. FF1~FF12 Comdty + FOMC 회의 일정으로 step-function 분해해 회의별 implied rate 산출. CME FedWatch 방식. 데이터는 100% 확보 가능, 구현량은 있음.

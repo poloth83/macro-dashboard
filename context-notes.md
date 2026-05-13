@@ -376,3 +376,30 @@
   - 우려 ticker: `USSWIT5 Curncy` / `USSWIT10 Curncy` (zero-coupon inflation swap 표준 ticker로 추정. invalid면 `USIS5 Curncy` 또는 `USSWITF5` 같은 변형 시도).
   - WTI/Gold/Copper generic future는 `CL1 / GC1 / HG1 Comdty` 표준.
 - 재fetch 후 dump_metrics로 새 카드 확인 및 quality 게이트 통과 확인.
+
+---
+
+## 2026-05-13 — Phase 4 (1) 자동화 & 사내 서빙 분리
+
+### 상황 발견
+- 8000 포트는 **macro_trade_ai 프로젝트의 `scripts/serve_reports.py`가 점유 중** (PID 20600). `reports/` 폴더만 노출하고 `/` → `daily_macro_report.html`로 redirect. 보안 핸들러(directory escape 방지, GET/HEAD만 허용)도 자체 구현되어 있음.
+- 기존 06:30 KST 작업은 macro_trade_ai 쪽 `run_morning_report.bat` (별도 프로젝트). URL `http://10.155.41.52:8000/daily_macro_report.html`은 macro_trade_ai의 산출물.
+- Phase 2 메모에서 본 dashboard가 8000으로 사내 서빙한다고 적힌 건 그 시점 상태였고, 현재는 macro_trade_ai가 8000을 차지한 형태로 변경됨.
+
+### 결정
+- 본 dashboard는 **8001 포트로 분리**해 macro_trade_ai의 8000 작업과 격리. 충돌 회피 + 두 프로젝트 독립 운영.
+- 작업 스케줄러 시간은 **06:40 KST**로 등록 (06:30은 macro_trade_ai). 평일만.
+
+### 신규 자산
+- `scripts/serve_dashboard.bat` — `python -m http.server 8001 --directory output --bind 0.0.0.0`을 venv 우선으로 실행. PC 부팅 후 사용자가 1회 더블클릭 (macro_trade_ai/serve_reports.bat과 동일 패턴).
+- `scripts/run_daily.bat` — 기존 그대로 (fetch + build만, 시간은 작업 스케줄러가 결정).
+
+### 작업 스케줄러 등록 (사용자 실행 명령)
+```
+schtasks /create /tn "MacroRatesDashboard" /tr "C:\Users\Hana_FI\claude code_ai\macro-dashboard\scripts\run_daily.bat" /sc weekly /d MON,TUE,WED,THU,FRI /st 06:40 /f
+```
+
+### 운용역 접속 URL
+- 본 dashboard: `http://10.155.41.52:8001/`
+- 본 dashboard history: `http://10.155.41.52:8001/history/`
+- macro_trade_ai (기존): `http://10.155.41.52:8000/daily_macro_report.html`

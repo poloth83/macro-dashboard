@@ -243,6 +243,10 @@ def _fmt_value(v: Optional[float], unit: str = "") -> str:
         return f"{v:.2f}"
     if unit == "KRW":
         return f"{v:.1f}"
+    if unit == "fxpair":
+        return f"{v:.4f}"
+    if unit == "cmdty":
+        return f"{v:,.2f}"
     if unit in ("vol", "idx"):
         return f"{v:.2f}"
     if unit == "px":

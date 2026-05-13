@@ -37,7 +37,6 @@ panels:
       - {ticker: "RTY Index", label: "Russell 2000", unit: "pt"}
       - {ticker: "VIX Index", label: "VIX", unit: "vol", required: true, headline: true, priority: 8}
       - {ticker: "MOVE Index", label: "MOVE", unit: "vol", headline: true, priority: 9}
-      - {ticker: "XBTUSD Curncy", label: "BTC/USD", unit: "USD"}
 
   ust_core:
     name: UST 코어
@@ -66,9 +65,6 @@ panels:
       - {ticker: "SFR1 Comdty", label: "SOFR Fut 1st", unit: "px", required: true, window_years: 5}
       - {ticker: "SFR2 Comdty", label: "SOFR Fut 2nd", unit: "px", window_years: 5}
       - {ticker: "SFR3 Comdty", label: "SOFR Fut 3rd", unit: "px", window_years: 5}
-      - {ticker: "SFR4 Comdty", label: "SOFR Fut 4th", unit: "px", window_years: 5}
-      - {ticker: "SFR5 Comdty", label: "SOFR Fut 5th", unit: "px", window_years: 5}
-      - {ticker: "SFR6 Comdty", label: "SOFR Fut 6th", unit: "px", window_years: 5}
 
   real_bei:
     name: 실질금리 & BEI
@@ -78,6 +74,8 @@ panels:
       - {ticker: "USGGT05Y Index", label: "5Y TIPS yield", unit: "%", window_years: 5}
       - {ticker: "USGGT10Y Index", label: "10Y TIPS yield", unit: "%", required: true, window_years: 5, headline: true, priority: 6}
       - {ticker: "USGG5Y5Y Index", label: "5Y5Y BEI", unit: "%"}
+      - {ticker: "USSWIT5 Curncy", label: "5Y Infl Swap", unit: "%"}
+      - {ticker: "USSWIT10 Curncy", label: "10Y Infl Swap", unit: "%"}
 
   swap_spread:
     # 패널명은 raw swap rate를 표시한다는 의미로 단순화. 진짜 스왑스프레드(swap - UST)는 derived 섹션에 별도 노출.
@@ -102,8 +100,17 @@ panels:
   fx:
     name: FX
     series:
+      - {ticker: "DXY Curncy", label: "DXY", unit: "idx"}
+      - {ticker: "EURUSD Curncy", label: "EUR/USD", unit: "fxpair"}
       - {ticker: "USDJPY Curncy", label: "USDJPY", unit: "JPY", required: true, headline: true, priority: 12}
       - {ticker: "USDKRW Curncy", label: "USDKRW", unit: "KRW"}
+
+  commodities:
+    name: 원자재
+    series:
+      - {ticker: "CL1 Comdty", label: "WTI", unit: "cmdty"}
+      - {ticker: "GC1 Comdty", label: "Gold", unit: "cmdty"}
+      - {ticker: "HG1 Comdty", label: "Copper", unit: "cmdty"}
 
   credit:
     name: Credit Proxy
@@ -135,13 +142,10 @@ panels:
       - {ticker: "GDGCAFJP Index", label: "Atlanta GDPNow", unit: "%", frequency: "release", min_obs: 8, stale_days: 21}
 
   macro_reaction:
-    name: Macro Surprise / Reaction
+    # 중복 reaction 카드 4종(UST 2Y/10Y, USDJPY, SPX)은 제거 — 각각 원 패널에 이미 있고 surprise 기능은 미구현이라 시각상 중복만 됨. CESIUSD만 유지.
+    name: Macro Surprise
     series:
       - {ticker: "CESIUSD Index", label: "US Econ Surprise", unit: "idx"}
-      - {ticker: "USGG2YR Index", label: "UST 2Y Reaction", unit: "%", required: true}
-      - {ticker: "USGG10YR Index", label: "UST 10Y Reaction", unit: "%", required: true}
-      - {ticker: "USDJPY Curncy", label: "USDJPY Reaction", unit: "JPY", required: true}
-      - {ticker: "SPX Index", label: "SPX Reaction", unit: "pt", required: true}
 
 derived:
   - {name: "SOFR-IORB spread", formula: "SOFRRATE Index - IRRBIOER Index", unit: "bp", window_years: 5}
@@ -160,8 +164,6 @@ derived:
   - {name: "10Y Real (TIPS)", formula: "USGGT10Y Index", unit: "%", window_years: 5}
   - {name: "5Y Real (TIPS)", formula: "USGGT05Y Index", unit: "%", window_years: 5}
   - {name: "IG OAS beta vs SPX", type: "rolling_beta", y: "LUACOAS Index", x: "SPX Index", x_mode: "pct", window: 60, unit: "bp/%"}
-  - {name: "IG OAS beta vs NDX", type: "rolling_beta", y: "LUACOAS Index", x: "NDX Index", x_mode: "pct", window: 60, unit: "bp/%"}
-  - {name: "IG OAS beta vs RTY", type: "rolling_beta", y: "LUACOAS Index", x: "RTY Index", x_mode: "pct", window: 60, unit: "bp/%"}
   # 추세 강도 보조. 주식지수 raw level의 3Y percentile/z-score는 강세장에서 구조적으로 +2σ에 깔리므로,
   # 200dma 이격도가 사이클 위치 판단에 더 유용. unit="dev%"는 build_dashboard에서 +X.X% / +X.XXpp 포맷팅.
   - {name: "SPX 200dma 이격도", type: "ma_distance", x: "SPX Index", window: 200, unit: "dev%"}

@@ -349,3 +349,30 @@
 ### Headline 통합 로직
 - `collect_headlines(panels, derived)` 신규. panel 카드 + derived 카드 중 `headline: true` 모두 수집해 priority 순으로 반환.
 - template render에 `headlines=[...]` 전달. template 상단에 `headline-strip` section 추가.
+
+---
+
+## 2026-05-13 — Phase 3 (7) 티커 정리: 7개 추가 / 10개 제거
+
+### 사용자 결정
+- 추가: DXY/EURUSD (구조 FX), 5Y/10Y inflation swap, 원자재 3종(WTI/금/구리).
+- 한국 채권은 skip (해외 데스크라 불요).
+- 제거: macro_reaction 중복 4종, SFR4~6, IG OAS beta vs NDX/RTY, BTC/USD.
+
+### 추가 7종
+- `fx` 패널에 `DXY Curncy`(idx), `EURUSD Curncy`(신규 unit `fxpair`, `{v:.4f}`).
+- `real_bei` 패널에 `USSWIT5 Curncy`(5Y inflation swap), `USSWIT10 Curncy`(10Y inflation swap). 단위 % — TIPS BEI와 비교 가능.
+- 신규 패널 `commodities`("원자재")에 `CL1 Comdty`(WTI), `GC1 Comdty`(Gold), `HG1 Comdty`(Copper). 신규 unit `cmdty`(`{v:,.2f}`).
+
+### 제거 10종
+- `risk_regime`: XBTUSD Curncy (매크로 운용 근거 부재).
+- `sofr_fomc`: SFR4/SFR5/SFR6 Comdty (운용역은 SFR1~3까지만 봄).
+- `macro_reaction`: UST 2Y/10Y Reaction, USDJPY Reaction, SPX Reaction. 각각 원 패널에 동일 ticker가 이미 있고 reaction/surprise 기능은 미구현 상태라 시각상 중복. CESIUSD만 유지하고 패널명을 `Macro Surprise`로 단축.
+- `derived`: IG OAS beta vs NDX, IG OAS beta vs RTY (SPX 하나만 유지로 충분).
+
+### 후속 조치 (회사 PC)
+- production fetch 1회 재실행 필요. 추가 7 ticker가 valid security인지 확인.
+  - `.venv/Scripts/python.exe fetch_bloomberg.py --mode production`
+  - 우려 ticker: `USSWIT5 Curncy` / `USSWIT10 Curncy` (zero-coupon inflation swap 표준 ticker로 추정. invalid면 `USIS5 Curncy` 또는 `USSWITF5` 같은 변형 시도).
+  - WTI/Gold/Copper generic future는 `CL1 / GC1 / HG1 Comdty` 표준.
+- 재fetch 후 dump_metrics로 새 카드 확인 및 quality 게이트 통과 확인.

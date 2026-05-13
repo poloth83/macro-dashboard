@@ -58,7 +58,7 @@
 - [x] percentile/z-score 윈도우 적정성 검토 — 메트릭별 `window_years` 옵션 도입. 정책금리(SOFR/IORB/SFR1~6) + 실질금리(TIPS 5Y/10Y) + 관련 derived 8종을 `window_years: 5`로. fetch history도 5Y+buffer로 확장. 카드 라벨은 동적 ("3Y %ile"/"5Y %ile")
 - [x] FOMC implied path 계산 로직 검증 — SFR{1,2,3} Comdty는 generic rolling 3M SOFR future라 "다음 IMM 분기 평균 SOFR"을 implied하지, "다음 FOMC implied rate"가 아님. WIRP-style 회의별 implied rate를 Bloomberg API로 받을 수 있는지 probe (`scripts/probe_fomc_implied.py`) 한 결과 apiFLDS 키워드 search 0 hit + 17개 candidate field 전부 `Field not valid`로 회사 entitlement 문제가 아니라 API 구조상 노출 안 됨 확인. → SFR derived 5종(SFR1/2/3 implied rate, SFR1/2-IORB gap) 제거. 정식 회의별 implied path가 필요해지면 향후 FF futures decomposition(B-2)으로 별도 진행
 - [x] 가중치 / 차트 스케일 / 색상 등 시각 튜닝 — 4건 적용. (A) z-score 색 임계 1σ/2σ → 1.5σ/2.5σ로 완화. (B) 핵심 12 metric 헤드라인 strip을 topbar 아래에 노출 (UST 2/10/30Y, 2s10s, 10Y BEI/TIPS, 10Y Swap Spread, VIX/MOVE, IG/HY OAS, USDJPY). (C) percentile 숫자 아래에 0~100 슬라이더 바(50% 마커 포함). (D) sparkline에 6M 평균 dashed horizontal line. 가중치는 yaml의 `priority` 필드로 처리 — 패널 내 카드/derived 모두 priority 오름차순 정렬, headline strip은 priority 1~12 카드를 한 줄로 통합.
-- [ ] 누락된 티커 추가 / 불필요한 티커 제거
+- [x] 누락된 티커 추가 / 불필요한 티커 제거. **추가 7종**: DXY Curncy, EURUSD Curncy (구조 FX), USSWIT5/USSWIT10 Curncy (inflation swap 5Y/10Y), CL1/GC1/HG1 Comdty (WTI/금/구리, 신규 `commodities` 패널). 신규 unit `fxpair`(EUR/USD: .4f), `cmdty`(원자재: ,.2f) 추가. **제거 10종**: XBTUSD (BTC, 매크로 운용 근거 부재), SFR4/SFR5/SFR6 (1~3까지만 운용역 관심), macro_reaction 패널의 중복 4종 (UST 2Y/10Y/USDJPY/SPX Reaction — 각각 원 패널에 이미 있고 surprise 기능 미구현이라 시각 중복만 됨, CESIUSD만 유지하고 패널명도 `Macro Surprise`로 단축), IG OAS beta vs NDX/RTY (SPX 하나만 유지). 회사 PC에서 production fetch 1회 재실행 필요 — 새 ticker 7종이 valid security인지 확인.
 
 ## Phase 4 — 자동화 & 운영
 

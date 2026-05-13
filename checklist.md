@@ -62,7 +62,7 @@
 
 ## Phase 4 — 자동화 & 운영
 
-- [ ] Windows 작업 스케줄러에 `scripts\run_daily.bat` 등록 (평일 **06:40** KST. 06:30은 macro_trade_ai 작업이 점유). `schtasks /create` 명령으로 등록. 사용자 직접 실행.
+- [x] Windows 작업 스케줄러에 `scripts\run_daily.bat` 등록 (평일 **06:40** KST. 06:30은 macro_trade_ai 작업이 점유). Task name `MacroRatesDashboard`, State=Ready, DaysOfWeek bitmask 62 (Mon~Fri), StartBoundary 06:40, NextRunTime 2026-05-14 06:40. 재등록 필요 시 `scripts/_register_task.cmd` 더블클릭.
 - [x] 사내 HTTP 서빙 — `scripts\serve_dashboard.bat` 추가. **8001** 포트로 분리(8000은 macro_trade_ai/serve_reports가 점유 중). URL: `http://10.155.41.52:8001/`, history는 `http://10.155.41.52:8001/history/`. PC 부팅 후 사용자가 더블클릭으로 1회 띄움 (macro_trade_ai의 serve_reports.bat과 동일 운영 패턴).
 - [x] 실패 시 로그 파일에 기록 — `logs/YYYY-MM-DD.log` (`run_daily.bat`이 fetch/build 각 단계 stdout/stderr를 그날 로그로 redirect 처리 중)
 - [ ] (선택) 슬랙 webhook으로 매일 06:35에 "오늘자 대시보드 → http://..." 푸시

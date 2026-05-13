@@ -403,3 +403,8 @@ schtasks /create /tn "MacroRatesDashboard" /tr "C:\Users\Hana_FI\claude code_ai\
 - 본 dashboard: `http://10.155.41.52:8001/`
 - 본 dashboard history: `http://10.155.41.52:8001/history/`
 - macro_trade_ai (기존): `http://10.155.41.52:8000/daily_macro_report.html`
+
+### 등록 완료 (2026-05-13)
+- 사용자 위임으로 에이전트가 직접 등록. State=Ready, NextRunTime 2026-05-14 06:40.
+- bash → cmd 호출에서 `/create` 같은 인자가 MSYS path conversion으로 깨지고, 따옴표 escape도 어려워 임시 `scripts/_register_task.cmd`를 만들어 그 안에서 schtasks 호출하는 방식으로 우회. 재등록 필요해지면 그 cmd 더블클릭.
+- 실행 컨텍스트는 현재 사용자 권한 + 로그온 상태에서만. 06:40 시점에 PC가 켜져있고 사용자 로그온 가정 (macro_trade_ai 06:30 작업과 동일 운영 가정).

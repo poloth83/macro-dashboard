@@ -432,3 +432,24 @@ schtasks /create /tn "MacroRatesDashboard" /tr "C:\Users\Hana_FI\claude code_ai\
 - **수동 종료**: 작업 관리자에서 `pythonw.exe` 프로세스 종료. 또는 `taskkill /im pythonw.exe /f` (다른 pythonw가 없는 한 안전).
 - **수동 시작 (서버가 꺼졌을 때)**: Startup 폴더의 `MacroRatesDashboardServer.vbs` 더블클릭, 또는 `scripts/serve_dashboard.bat`(콘솔 창 보임 버전).
 - **자동 시작 해제**: Startup 폴더에서 `MacroRatesDashboardServer.vbs` 삭제.
+
+---
+
+## 2026-05-14 — 자동 실행 시간 06:40 → 08:30 이동
+
+### 사건
+- 2026-05-14 06:40:40에 작업은 정상 실행됐으나(LastRunTime 확인) blpapi가 `127.0.0.1:8194`로 3회 connect 실패 → fetch 종료(exit 1). build 미실행. dashboard는 5월 13일자 그대로 유지.
+- 로그(`logs/2026-05-14.log`)에 `Failed to connect to 127.0.0.1:8194 ... connect event failed`와 `RuntimeError: blpapi session 시작 실패` 기록.
+- 원인: 06:40 시점에 Bloomberg Terminal이 미실행. 사용자가 출근해서 로그인하는 시점은 보통 그보다 늦음.
+- 참고: macro_trade_ai 작업도 동일 패턴 (`task_scheduler_last_run.log`의 마지막 성공 실행이 5월 13일 08:46:30로, 출근 후 수동 트리거로 보임).
+
+### 결정 — 시간 단순 이동 (08:30)
+- 사용자 선택: 재시도 로직 도입 대신 시간만 출근 후로 이동.
+- `schtasks /change /tn "MacroRatesDashboard" /st 08:30`. 권한 OK.
+- 재변경 필요 시 `scripts/_change_task_time.cmd` 더블클릭(시간 값 수정 후).
+- 확인: Get-ScheduledTask Triggers의 StartBoundary가 `2026-05-13T08:30:00`로 갱신.
+
+### 즉시 갱신
+- 사용자 위임으로 에이전트가 `run_daily.bat` 1회 수동 트리거.
+- 결과: `data/2026-05-14.json` 7.9MB, 74 ticker × 1384 obs, quality 0 errors / 0 warnings. `output/index.html` 219KB (어제 200KB → 19KB 증가, 신규 ticker 7종 반영).
+- 신규 ticker 7종(DXY/EURUSD/USSWIT5/USSWIT10/CL1/GC1/HG1) 모두 valid security로 확인. 우려했던 inflation swap도 정상.

@@ -62,7 +62,7 @@
 
 ## Phase 4 — 자동화 & 운영
 
-- [x] Windows 작업 스케줄러에 `scripts\run_daily.bat` 등록 (평일 **06:40** KST. 06:30은 macro_trade_ai 작업이 점유). Task name `MacroRatesDashboard`, State=Ready, DaysOfWeek bitmask 62 (Mon~Fri), StartBoundary 06:40, NextRunTime 2026-05-14 06:40. 재등록 필요 시 `scripts/_register_task.cmd` 더블클릭.
+- [x] Windows 작업 스케줄러에 `scripts\run_daily.bat` 등록. Task name `MacroRatesDashboard`, 평일 (DaysOfWeek bitmask 62). 시간은 첫 등록 06:40 → **08:30**으로 이동 (`scripts/_change_task_time.cmd`). 사유: 06:40 시점엔 사용자가 출근/Bloomberg Terminal 로그인 전이라 8194 connect 실패로 fetch 종료 (2026-05-14 첫 실행에서 확인). 출근 + Bloomberg 로그인 보장되는 08:30으로 단순 이동. 재등록 시 `scripts/_register_task.cmd`, 시간만 변경 시 `_change_task_time.cmd`.
 - [x] 사내 HTTP 서빙 — **8001** 포트(8000은 macro_trade_ai/serve_reports 점유). URL: `http://10.155.41.52:8001/`, history는 `http://10.155.41.52:8001/history/`. 운영 패턴은 **로그온 시 자동 + 콘솔 창 없음**으로 정리됨. Startup 폴더에 `MacroRatesDashboardServer.vbs`(scripts/_start_server.vbs의 사본)가 wscript→pythonw→`scripts/_serve_http.py`(stderr/stdout=None 회피 wrapper) 체인으로 실행. 수동 길은 `scripts\serve_dashboard.bat`도 그대로 유지.
 - [x] 실패 시 로그 파일에 기록 — `logs/YYYY-MM-DD.log` (`run_daily.bat`이 fetch/build 각 단계 stdout/stderr를 그날 로그로 redirect 처리 중)
 - [ ] (선택) 슬랙 webhook으로 매일 06:35에 "오늘자 대시보드 → http://..." 푸시

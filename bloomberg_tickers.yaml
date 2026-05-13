@@ -21,10 +21,11 @@ panels:
   liquidity:
     name: 달러 유동성
     series:
-      - {ticker: "FARBAST Index",  label: "Fed Balance Sheet", unit: "USD bn", stale_days: 10, scale: 0.001}
-      - {ticker: "FARBRBFB Index", label: "Reserve Balances", unit: "USD bn", stale_days: 10, scale: 0.001}
-      - {ticker: "FARBDTRS Index", label: "TGA", unit: "USD bn", stale_days: 10, scale: 0.001}
-      - {ticker: "FARWDEAL Index", label: "Overnight RRP", unit: "USD bn", stale_days: 10, scale: 0.001}
+      # H.4.1 4종은 주 1회(목요일) 발표. blpapi NON_TRADING_WEEKDAYS fill 때문에 daily로 보면 1D 변화가 항상 0으로 노이즈처럼 깔리므로 release frequency로 처리.
+      - {ticker: "FARBAST Index",  label: "Fed Balance Sheet", unit: "USD bn", frequency: "release", stale_days: 14, min_obs: 52, scale: 0.001}
+      - {ticker: "FARBRBFB Index", label: "Reserve Balances", unit: "USD bn", frequency: "release", stale_days: 14, min_obs: 52, scale: 0.001}
+      - {ticker: "FARBDTRS Index", label: "TGA", unit: "USD bn", frequency: "release", stale_days: 14, min_obs: 52, scale: 0.001}
+      - {ticker: "FARWDEAL Index", label: "Overnight RRP", unit: "USD bn", frequency: "release", stale_days: 14, min_obs: 52, scale: 0.001}
       - {ticker: "SOFRRATE Index", label: "SOFR", unit: "%", required: true, window_years: 5}
       - {ticker: "IRRBIOER Index", label: "IORB", unit: "%", required: true, window_years: 5}
 
@@ -79,7 +80,8 @@ panels:
       - {ticker: "USGG5Y5Y Index", label: "5Y5Y BEI", unit: "%"}
 
   swap_spread:
-    name: Swap Spread & Funding
+    # 패널명은 raw swap rate를 표시한다는 의미로 단순화. 진짜 스왑스프레드(swap - UST)는 derived 섹션에 별도 노출.
+    name: SOFR Swap Rates
     series:
       - {ticker: "USOSFR2 Curncy", label: "SOFR Swap 2Y", unit: "%"}
       - {ticker: "USOSFR5 Curncy", label: "SOFR Swap 5Y", unit: "%"}
@@ -160,3 +162,8 @@ derived:
   - {name: "IG OAS beta vs SPX", type: "rolling_beta", y: "LUACOAS Index", x: "SPX Index", x_mode: "pct", window: 60, unit: "bp/%"}
   - {name: "IG OAS beta vs NDX", type: "rolling_beta", y: "LUACOAS Index", x: "NDX Index", x_mode: "pct", window: 60, unit: "bp/%"}
   - {name: "IG OAS beta vs RTY", type: "rolling_beta", y: "LUACOAS Index", x: "RTY Index", x_mode: "pct", window: 60, unit: "bp/%"}
+  # 추세 강도 보조. 주식지수 raw level의 3Y percentile/z-score는 강세장에서 구조적으로 +2σ에 깔리므로,
+  # 200dma 이격도가 사이클 위치 판단에 더 유용. unit="dev%"는 build_dashboard에서 +X.X% / +X.XXpp 포맷팅.
+  - {name: "SPX 200dma 이격도", type: "ma_distance", x: "SPX Index", window: 200, unit: "dev%"}
+  - {name: "NDX 200dma 이격도", type: "ma_distance", x: "NDX Index", window: 200, unit: "dev%"}
+  - {name: "RTY 200dma 이격도", type: "ma_distance", x: "RTY Index", window: 200, unit: "dev%"}

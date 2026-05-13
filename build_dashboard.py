@@ -110,6 +110,10 @@ def compute_derivations(series_map: dict[str, pd.Series]) -> list[dict]:
                     window=int(d.get("window", 60)),
                     x_mode=d.get("x_mode", "diff"),
                 )
+            elif d.get("type") == "ma_distance":
+                if d["x"] not in series_map:
+                    continue
+                series = _ma_distance(series_map[d["x"]], window=int(d.get("window", 200)))
             else:
                 series = _evaluate_formula(d["formula"], series_map)
         except Exception as e:
@@ -151,6 +155,15 @@ def _evaluate_formula(formula: str, series_map: dict[str, pd.Series]) -> pd.Seri
     local_ns = {ph: aligned[ph] for ph in placeholders}
     result = eval(expr, {"__builtins__": {}}, local_ns)
     return result
+
+
+def _ma_distance(s: pd.Series, window: int = 200) -> pd.Series:
+    """가격이 window-day moving average에서 몇 % 떨어져 있는지. 추세 강도 지표."""
+    clean = s.dropna().sort_index()
+    if clean.empty:
+        return pd.Series([], dtype=float)
+    ma = clean.rolling(window).mean()
+    return ((clean - ma) / ma * 100.0).dropna()
 
 
 def _rolling_beta(y: pd.Series, x: pd.Series, window: int = 60, x_mode: str = "diff") -> pd.Series:
@@ -218,6 +231,8 @@ def _fmt_value(v: Optional[float], unit: str = "") -> str:
         return f"{v:,.0f}k"
     if unit == "pt":
         return f"{v:,.1f}"
+    if unit == "dev%":
+        return f"{v:+.1f}%"
     return f"{v:.2f}"
 
 
@@ -229,6 +244,12 @@ def _fmt_change(v: Optional[float], unit: str = "") -> str:
         return f"{sign}{v*100:.0f}bp"   # 금리·BEI는 변화량을 bp로 표시
     if unit == "bp":
         return f"{sign}{v:.0f}bp"
+    if unit == "px":
+        # SOFR future 등 가격 단위. 0.005 미만 변화가 2 decimal에서 가려지므로 3 decimal.
+        return f"{sign}{v:.3f}"
+    if unit == "dev%":
+        # 200dma 이격도 같은 % 편차. fmt_value는 +.1f%, change는 절대 변화량을 pp로.
+        return f"{sign}{v:.2f}pp"
     if unit == "beta":
         return f"{sign}{v:.2f}x"
     if unit == "bp/%":

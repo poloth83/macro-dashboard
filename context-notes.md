@@ -281,3 +281,34 @@
 
 ### 향후 (FOMC implied path 필요해지면)
 - B-2 (FF futures decomposition) 경로. FF1~FF12 Comdty + FOMC 회의 일정으로 step-function 분해해 회의별 implied rate 산출. CME FedWatch 방식. 데이터는 100% 확보 가능, 구현량은 있음.
+
+---
+
+## 2026-05-13 — Phase 3 (5) 패널 A~H 시각 검증 1차 보정 4건
+
+### 배경
+- `scripts/dump_metrics.py`를 신규로 만들어 73 metric + 14 derived를 콘솔 한 표로 dump. 운용역 시각 검증의 베이스.
+- 절대값/range 자체는 거의 다 합리적. 표시·구조 측면 4건 보정.
+
+### 보정 1 — SFR 카드 변화량 정밀도 (px 3 decimal)
+- 증상: `SOFR Fut 1st` 1D=`-0.00`, 1W=`+0.00` — 0.005 미만 변화가 fmt_change 2 decimal에서 가려져 운용역이 "정말 0인지 표시 한계인지" 구분 불가.
+- 대응: `build_dashboard._fmt_change`에 `unit == "px"` 분기 추가, 3 decimal로.
+- 결과: SFR2~6의 1W/1M 변화가 의미 있는 값으로 보임. SFR1 1D는 여전히 -0.00로 보이지만 이건 실제 변화가 0.0005 수준이라 3 decimal에서도 반올림되는 정상 케이스.
+
+### 보정 2 — H.4.1 frequency=release
+- 증상: Fed BS/Reserve Balances/TGA/Overnight RRP 4종이 매일 1D=+0bn로 표시. blpapi HistoricalDataRequest가 NON_TRADING_WEEKDAYS + PREVIOUS_VALUE로 fill해서 카드는 daily처럼 보이지만 실제 발표는 주 1회(목).
+- 대응: yaml 4종에 `frequency: release` + `stale_days: 14` + `min_obs: 52` 추가.
+- 결과: 1D=`Prev` 라벨로 직전 release 대비 변화로 표시 (Fed BS +9.56bn, Reserve +113.99bn, TGA -104.17bn, RRP +0.89bn). as_of도 2026-05-06(최근 목요일)로 정확. percentile/z-score도 release 단위 통계로 의미 있는 값 산출. 단, stats.compute_metric의 release tail이 12*window_years로 월 기준 hard-coded라 주별 데이터엔 다소 좁은 윈도우(3Y면 36 obs ≈ 9개월). 통계 정밀도 한계는 수용 — H.4.1의 운용 가치는 절대 수준과 추세에 있고 percentile은 보조적.
+
+### 보정 3 — swap_spread 패널명 정리
+- 증상: 패널명이 "Swap Spread & Funding"인데 정작 카드는 swap rate 4종. 진짜 스왑스프레드는 derived 섹션. 운용역 기대 미스매치.
+- 대응: 패널명을 "SOFR Swap Rates"로 단순화. 패널 key(`swap_spread`)는 derived의 swap spread 카드와 코드상 분리되어 영향 없음. 진짜 스왑스프레드 4종(2/5/10/30Y)은 derived 그대로.
+
+### 보정 4 — 주식 200dma 이격도 derived 추가
+- 증상: SPX/NDX/RTY raw level의 3Y percentile은 강세 추세장에서 구조적으로 100%·+2σ에 깔림. 운용역이 "항상 +2σ"로 학습되면 신호 가치 소실.
+- 대응: derived에 `type: "ma_distance"` 신규 (build_dashboard에 `_ma_distance` 함수 + 분기). SPX/NDX/RTY 200dma 이격도(=(price - 200dma) / 200dma * 100) 3종 추가. unit 신규 `dev%` 도입 (fmt_value: `+X.X%`, fmt_change: `+X.XXpp`) — fmt에서 % 단위 ×100 bp 변환과 분리.
+- 결과: SPX +9.23% (63% percentile, +0.48σ), NDX +16.74% (93%, +1.19σ), RTY +13.24% (93%, +1.25σ). raw level의 100%/+2σ 깔림과 비교해 사이클 위치 판단이 훨씬 명확.
+
+### 검증
+- 재빌드 통과. dump로 4건 모두 의도대로 반영 확인.
+- 신규 자산: `scripts/dump_metrics.py`(향후 시각 검증 재활용용).

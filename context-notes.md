@@ -408,3 +408,27 @@ schtasks /create /tn "MacroRatesDashboard" /tr "C:\Users\Hana_FI\claude code_ai\
 - 사용자 위임으로 에이전트가 직접 등록. State=Ready, NextRunTime 2026-05-14 06:40.
 - bash → cmd 호출에서 `/create` 같은 인자가 MSYS path conversion으로 깨지고, 따옴표 escape도 어려워 임시 `scripts/_register_task.cmd`를 만들어 그 안에서 schtasks 호출하는 방식으로 우회. 재등록 필요해지면 그 cmd 더블클릭.
 - 실행 컨텍스트는 현재 사용자 권한 + 로그온 상태에서만. 06:40 시점에 PC가 켜져있고 사용자 로그온 가정 (macro_trade_ai 06:30 작업과 동일 운영 가정).
+
+### 8001 서버 자동 시작 — Startup 폴더 + pythonw wrapper (2026-05-13)
+
+#### 사용자 요청
+- cmd 창이 항상 떠있는 게 부담. PC 로그온 시 자동 시작 + 콘솔 창 숨김 운영을 원함.
+
+#### 시도 흐름 (실패 경로 기록)
+1. PowerShell `Register-ScheduledTask -AtLogOn` — `PermissionDenied (HRESULT 0x80070005)`. PS cmdlet은 admin 권한 요구하는 환경.
+2. `schtasks /create /sc ONLOGON` (사용자 권한, `MacroRatesDashboard`(06:40 작업)는 이 방식으로 됐던 것과 동일) — 그러나 ONLOGON 트리거는 `ERROR: Access is denied`. ONLOGON과 weekly의 권한 요구가 다른 듯.
+3. Windows **Startup 폴더 (`%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup`)** 사용 — admin 불요, OS 로그온 시 자동 실행. ✅
+4. 처음엔 vbs가 `pythonw.exe -m http.server 8001 ...`을 직접 호출 → server는 LISTENING이지만 모든 GET이 `Empty reply from server`로 응답. 원인: **pythonw 환경에서 `sys.stderr is None`** → `BaseHTTPRequestHandler.log_message`의 `sys.stderr.write`가 `AttributeError` → handler가 응답 못 보내고 connection 끊김.
+5. 해결: wrapper `scripts/_serve_http.py`를 만들어 stderr/stdout을 devnull로 미리 교체한 뒤 `ThreadingTCPServer.serve_forever` 호출. vbs는 그 wrapper만 pythonw로 실행. ✅
+
+#### 신규 자산
+- `scripts/_serve_http.py` — pythonw 환경에서도 안전한 정적 HTTP 서버 wrapper (output/ 노출, 8001).
+- `scripts/_start_server.vbs` — wscript가 호출해서 pythonw로 wrapper를 hidden window로 띄움.
+- Startup 폴더에 `MacroRatesDashboardServer.vbs`(vbs 사본) 배치. 로그온 시 자동 실행.
+- (남겨둠) `scripts/_register_server_task.cmd` / `_register_server_task.ps1` — 작업 스케줄러로 등록 시도했던 fallback. admin 권한이 확보되면 그 길로도 가능.
+
+#### 운영
+- **자동**: PC 부팅 + 사용자 로그온 시 vbs가 자동 실행 → 8001 LISTENING (콘솔 창 없음). 사용자 작업 안 방해.
+- **수동 종료**: 작업 관리자에서 `pythonw.exe` 프로세스 종료. 또는 `taskkill /im pythonw.exe /f` (다른 pythonw가 없는 한 안전).
+- **수동 시작 (서버가 꺼졌을 때)**: Startup 폴더의 `MacroRatesDashboardServer.vbs` 더블클릭, 또는 `scripts/serve_dashboard.bat`(콘솔 창 보임 버전).
+- **자동 시작 해제**: Startup 폴더에서 `MacroRatesDashboardServer.vbs` 삭제.

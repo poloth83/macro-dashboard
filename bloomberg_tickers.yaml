@@ -35,20 +35,20 @@ panels:
       - {ticker: "SPX Index", label: "S&P 500", unit: "pt", required: true}
       - {ticker: "NDX Index", label: "Nasdaq 100", unit: "pt"}
       - {ticker: "RTY Index", label: "Russell 2000", unit: "pt"}
-      - {ticker: "VIX Index", label: "VIX", unit: "vol", required: true}
-      - {ticker: "MOVE Index", label: "MOVE", unit: "vol"}
+      - {ticker: "VIX Index", label: "VIX", unit: "vol", required: true, headline: true, priority: 8}
+      - {ticker: "MOVE Index", label: "MOVE", unit: "vol", headline: true, priority: 9}
       - {ticker: "XBTUSD Curncy", label: "BTC/USD", unit: "USD"}
 
   ust_core:
     name: UST 코어
     series:
       - {ticker: "USGG3M Index", label: "UST 3M", unit: "%"}
-      - {ticker: "USGG2YR Index", label: "UST 2Y", unit: "%", required: true}
+      - {ticker: "USGG2YR Index", label: "UST 2Y", unit: "%", required: true, headline: true, priority: 1}
       - {ticker: "USGG5YR Index", label: "UST 5Y", unit: "%", required: true}
       - {ticker: "USGG7YR Index", label: "UST 7Y", unit: "%"}
-      - {ticker: "USGG10YR Index", label: "UST 10Y", unit: "%", required: true}
-      - {ticker: "USGG30YR Index", label: "UST 30Y", unit: "%", required: true}
-      - {ticker: "USYC2Y10 Index", label: "2s10s slope", unit: "bp"}
+      - {ticker: "USGG10YR Index", label: "UST 10Y", unit: "%", required: true, headline: true, priority: 2}
+      - {ticker: "USGG30YR Index", label: "UST 30Y", unit: "%", required: true, headline: true, priority: 3}
+      - {ticker: "USYC2Y10 Index", label: "2s10s slope", unit: "bp", headline: true, priority: 4}
       - {ticker: "USYC5Y30 Index", label: "5s30s slope", unit: "bp"}
 
   ust_futures:
@@ -74,9 +74,9 @@ panels:
     name: 실질금리 & BEI
     series:
       - {ticker: "USGGBE05 Index", label: "5Y BEI", unit: "%"}
-      - {ticker: "USGGBE10 Index", label: "10Y BEI", unit: "%", required: true}
+      - {ticker: "USGGBE10 Index", label: "10Y BEI", unit: "%", required: true, headline: true, priority: 5}
       - {ticker: "USGGT05Y Index", label: "5Y TIPS yield", unit: "%", window_years: 5}
-      - {ticker: "USGGT10Y Index", label: "10Y TIPS yield", unit: "%", required: true, window_years: 5}
+      - {ticker: "USGGT10Y Index", label: "10Y TIPS yield", unit: "%", required: true, window_years: 5, headline: true, priority: 6}
       - {ticker: "USGG5Y5Y Index", label: "5Y5Y BEI", unit: "%"}
 
   swap_spread:
@@ -102,7 +102,7 @@ panels:
   fx:
     name: FX
     series:
-      - {ticker: "USDJPY Curncy", label: "USDJPY", unit: "JPY", required: true}
+      - {ticker: "USDJPY Curncy", label: "USDJPY", unit: "JPY", required: true, headline: true, priority: 12}
       - {ticker: "USDKRW Curncy", label: "USDKRW", unit: "KRW"}
 
   credit:
@@ -110,8 +110,8 @@ panels:
     series:
       - {ticker: "LQD US Equity", label: "LQD (IG ETF)", unit: "USD"}
       - {ticker: "HYG US Equity", label: "HYG (HY ETF)", unit: "USD"}
-      - {ticker: "LUACOAS Index", label: "US IG OAS", unit: "bp", scale: 100}
-      - {ticker: "LF98OAS Index", label: "US HY OAS", unit: "bp", scale: 100}
+      - {ticker: "LUACOAS Index", label: "US IG OAS", unit: "bp", scale: 100, headline: true, priority: 10}
+      - {ticker: "LF98OAS Index", label: "US HY OAS", unit: "bp", scale: 100, headline: true, priority: 11}
       - {ticker: "CDX IG CDSI GEN 5Y Corp", label: "CDX IG 5Y", unit: "bp"}
       - {ticker: "CDX HY CDSI GEN 5Y SPRD Corp", label: "CDX HY 5Y", unit: "bp"}
 
@@ -145,7 +145,7 @@ panels:
 
 derived:
   - {name: "SOFR-IORB spread", formula: "SOFRRATE Index - IRRBIOER Index", unit: "bp", window_years: 5}
-  - {name: "10Y Swap Spread", formula: "USOSFR10 Curncy - USGG10YR Index", unit: "bp"}
+  - {name: "10Y Swap Spread", formula: "USOSFR10 Curncy - USGG10YR Index", unit: "bp", headline: true, priority: 7}
   - {name: "5Y Swap Spread", formula: "USOSFR5 Curncy - USGG5YR Index", unit: "bp"}
   - {name: "2Y Swap Spread", formula: "USOSFR2 Curncy - USGG2YR Index", unit: "bp"}
   - {name: "30Y Swap Spread", formula: "USOSFR30 Curncy - USGG30YR Index", unit: "bp"}

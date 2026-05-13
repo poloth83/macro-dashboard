@@ -66,14 +66,16 @@ def snapshot_to_series_map(snapshot: dict) -> dict[str, pd.Series]:
 
 
 def compute_panels(snapshot: dict, series_map: dict[str, pd.Series]) -> list[dict]:
-    """snapshot의 패널 순서대로 stats 적용."""
+    """snapshot의 패널 순서대로 stats 적용. priority 오름차순으로 카드 정렬."""
     config = yaml.safe_load(TICKERS_PATH.read_text(encoding="utf-8"))
     panels_out = []
 
     for panel_key, panel_def in config["panels"].items():
         panel_data = snapshot["panels"].get(panel_key, {"tickers": {}})
+        # priority 오름차순(미설정 = 99). 동일 priority 내에서는 yaml 정의 순서 유지(stable sort).
+        sorted_series = sorted(panel_def["series"], key=lambda s: int(s.get("priority", 99)))
         series_for_panel = {}
-        for s in panel_def["series"]:
+        for s in sorted_series:
             tk = s["ticker"]
             if tk not in panel_data.get("tickers", {}):
                 continue
@@ -83,6 +85,8 @@ def compute_panels(snapshot: dict, series_map: dict[str, pd.Series]) -> list[dic
                 "frequency": s.get("frequency", "daily"),
                 "window_years": int(s.get("window_years", 3)),
                 "timeseries": series_map.get(tk, pd.Series([], dtype=float)),
+                "priority": int(s.get("priority", 99)),
+                "headline": bool(s.get("headline", False)),
             }
         result = stats_mod.compute_panel(panel_def["name"], series_for_panel)
         result["key"] = panel_key
@@ -92,9 +96,9 @@ def compute_panels(snapshot: dict, series_map: dict[str, pd.Series]) -> list[dic
 
 
 def compute_derivations(series_map: dict[str, pd.Series]) -> list[dict]:
-    """bloomberg_tickers.yaml의 derived 섹션을 계산."""
+    """bloomberg_tickers.yaml의 derived 섹션을 계산. priority 오름차순 정렬."""
     config = yaml.safe_load(TICKERS_PATH.read_text(encoding="utf-8"))
-    derived_defs = config.get("derived", [])
+    derived_defs = sorted(config.get("derived", []), key=lambda d: int(d.get("priority", 99)))
     out = []
 
     for d in derived_defs:
@@ -124,9 +128,28 @@ def compute_derivations(series_map: dict[str, pd.Series]) -> list[dict]:
         # bp 단위는 100배 스케일 (백분율 차이를 bp로)
         if unit == "bp":
             series = series * 100.0
-        out.append(stats_mod.compute_derived(name, unit, series, window_years=int(d.get("window_years", 3))))
+        out.append(stats_mod.compute_derived(
+            name, unit, series,
+            window_years=int(d.get("window_years", 3)),
+            priority=int(d.get("priority", 99)),
+            headline=bool(d.get("headline", False)),
+        ))
 
     return out
+
+
+def collect_headlines(panels: list[dict], derived: list[dict]) -> list[dict]:
+    """headline=true 카드를 priority 순으로 모은다. 패널/derived 구분 없이 통합 strip."""
+    headlines = []
+    for panel in panels:
+        for m in panel["metrics"]:
+            if m.get("headline"):
+                headlines.append(m)
+    for m in derived:
+        if m.get("headline"):
+            headlines.append(m)
+    headlines.sort(key=lambda x: int(x.get("priority", 99)))
+    return headlines
 
 
 def _evaluate_formula(formula: str, series_map: dict[str, pd.Series]) -> pd.Series:
@@ -179,7 +202,7 @@ def _rolling_beta(y: pd.Series, x: pd.Series, window: int = 60, x_mode: str = "d
     return (cov / var).dropna()
 
 
-def render(snapshot_date: str, panels: list[dict], derived: list[dict], quality: dict) -> str:
+def render(snapshot_date: str, panels: list[dict], derived: list[dict], headlines: list[dict], quality: dict) -> str:
     env = Environment(
         loader=FileSystemLoader(str(TEMPLATES_DIR)),
         autoescape=select_autoescape(["html"]),
@@ -199,6 +222,7 @@ def render(snapshot_date: str, panels: list[dict], derived: list[dict], quality:
         quality=quality,
         panels=panels,
         derived=derived,
+        headlines=headlines,
     )
 
 
@@ -270,16 +294,16 @@ def _fmt_zscore(v: Optional[float]) -> str:
 
 
 def _color_for_zscore(v: Optional[float]) -> str:
-    """z-score → CSS class name. 극단값 강조."""
+    """z-score → CSS class name. 극단값 강조. 임계 1.5σ/2.5σ로 색 신호의 빈도 완화."""
     if v is None:
         return "z-na"
-    if v >= 2.0:
+    if v >= 2.5:
         return "z-hot-high"
-    if v >= 1.0:
+    if v >= 1.5:
         return "z-warm-high"
-    if v <= -2.0:
+    if v <= -2.5:
         return "z-hot-low"
-    if v <= -1.0:
+    if v <= -1.5:
         return "z-warm-low"
     return "z-neutral"
 
@@ -297,9 +321,10 @@ def main():
     print(f"  computing panel stats...")
     panels = compute_panels(snapshot, series_map)
     derived = compute_derivations(series_map)
+    headlines = collect_headlines(panels, derived)
 
     print(f"  rendering...")
-    html = render(snapshot["date"], panels, derived, snapshot.get("quality", {}))
+    html = render(snapshot["date"], panels, derived, headlines, snapshot.get("quality", {}))
 
     # 오늘 자
     index_path = OUTPUT_DIR / "index.html"

@@ -30,6 +30,22 @@
 
 <main>
 
+  {# ========== headline strip — yaml에서 headline: true 지정한 핵심 카드 ========== #}
+  {% if headlines %}
+  <section class="headline-strip" aria-label="Headline">
+    {% for m in headlines %}
+    <div class="headline-card {{ m.zscore | color_z }}">
+      <div class="headline-label" title="{{ m.ticker }}">{{ m.label }}</div>
+      <div class="headline-current">{{ m.current | fmt(m.unit) }}</div>
+      <div class="headline-meta">
+        <span class="headline-change">{{ m.change_1d | fmt_change(m.unit) }}</span>
+        <span class="headline-pct">{{ m.percentile | fmt_pct }}</span>
+      </div>
+    </div>
+    {% endfor %}
+  </section>
+  {% endif %}
+
   {% if quality.warnings %}
   <section class="quality-panel">
     <h2>Data Quality Warnings</h2>
@@ -59,9 +75,12 @@
           <span title="{{ m.change_1m_label }}">{{ m.change_1m_label }} {{ m.change_1m | fmt_change(m.unit) }}</span>
         </div>
         <div class="stats-row">
-          <div class="stat">
+          <div class="stat stat-percentile">
             <span class="stat-label">{{ m.window_years }}Y %ile</span>
             <span class="stat-value">{{ m.percentile | fmt_pct }}</span>
+            {% if m.percentile is not none %}
+            <div class="percentile-bar"><div class="percentile-fill" style="width: {{ m.percentile }}%"></div></div>
+            {% endif %}
           </div>
           <div class="stat">
             <span class="stat-label">{{ m.window_years }}Y z</span>
@@ -74,6 +93,9 @@
         </div>
         {% if m.sparkline_points %}
         <svg class="sparkline" viewBox="0 0 180 36" preserveAspectRatio="none" aria-hidden="true">
+          {% if m.sparkline_baseline_y is not none %}
+          <line class="sparkline-baseline" x1="0" y1="{{ m.sparkline_baseline_y }}" x2="180" y2="{{ m.sparkline_baseline_y }}"></line>
+          {% endif %}
           <polyline points="{{ m.sparkline_points }}"></polyline>
         </svg>
         {% else %}
@@ -103,9 +125,12 @@
           <span title="{{ m.change_1m_label }}">{{ m.change_1m_label }} {{ m.change_1m | fmt_change(m.unit) }}</span>
         </div>
         <div class="stats-row">
-          <div class="stat">
+          <div class="stat stat-percentile">
             <span class="stat-label">{{ m.window_years }}Y %ile</span>
             <span class="stat-value">{{ m.percentile | fmt_pct }}</span>
+            {% if m.percentile is not none %}
+            <div class="percentile-bar"><div class="percentile-fill" style="width: {{ m.percentile }}%"></div></div>
+            {% endif %}
           </div>
           <div class="stat">
             <span class="stat-label">{{ m.window_years }}Y z</span>
@@ -118,6 +143,9 @@
         </div>
         {% if m.sparkline_points %}
         <svg class="sparkline" viewBox="0 0 180 36" preserveAspectRatio="none" aria-hidden="true">
+          {% if m.sparkline_baseline_y is not none %}
+          <line class="sparkline-baseline" x1="0" y1="{{ m.sparkline_baseline_y }}" x2="180" y2="{{ m.sparkline_baseline_y }}"></line>
+          {% endif %}
           <polyline points="{{ m.sparkline_points }}"></polyline>
         </svg>
         {% else %}

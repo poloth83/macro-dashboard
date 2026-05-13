@@ -312,3 +312,40 @@
 ### 검증
 - 재빌드 통과. dump로 4건 모두 의도대로 반영 확인.
 - 신규 자산: `scripts/dump_metrics.py`(향후 시각 검증 재활용용).
+
+---
+
+## 2026-05-13 — Phase 3 (6) 시각 튜닝 4건 + priority 정렬 도입
+
+### 사용자 결정
+- (a) "가중치"의 의도는 카드 정렬 우선순위.
+- 시각 보정 4건 모두 적용: A 색상 임계 완화 + B 헤드라인 strip + C percentile 바 + D sparkline 기준선.
+- 헤드라인 set은 추천 12종 그대로. 정렬은 yaml `priority` 필드 도입.
+
+### A. 색상 임계값 완화 (1σ/2σ → 1.5σ/2.5σ)
+- 기존 임계는 z-score 1σ에서 노랑/파랑, 2σ에서 빨강/초록. 운용 일상에서 너무 자주 트리거되어 색 신호가 둔감.
+- `_color_for_zscore` 임계 4곳을 1.5/2.5로 완화. 재빌드 후 분포: hot-high 3, warm-high 14, warm-low 2, hot-low 0, neutral 72, na 1 — 색이 정말 극단값에만 켜짐.
+
+### B. 헤드라인 strip (12 카드)
+- topbar 아래 가로 grid 12 columns(<=1400px에선 6 columns) 형태. 각 카드는 label/current/1D change/percentile만 작게.
+- 구성: UST 2/10/30Y, 2s10s slope, 10Y BEI, 10Y TIPS yield, 10Y Swap Spread(derived), VIX, MOVE, IG OAS, HY OAS, USDJPY.
+- 빠진 후보(의도): SPX/NDX/RTY(주식지수 raw, 200dma 이격도 별도), Fed BS(주간 발표 → daily 요약 부적합), JGB/Bund(별도 패널), SOFR/IORB(스왑스프레드와 중복).
+
+### C. percentile 바 시각화
+- 카드 stats-row의 percentile 숫자 아래에 0~100 horizontal progress bar (4px). 50% 위치에 가는 세로 마커.
+- fill은 accent 색 70% opacity. window 내 위치를 시각적으로 즉각 인지.
+
+### D. sparkline 기준선
+- sparkline SVG에 6M 평균값의 y좌표를 dashed horizontal line으로 추가.
+- `stats._sparkline_baseline_y` 신규 함수 + `MetricStats.sparkline_baseline_y` 필드 추가.
+- CSS `.sparkline-baseline` (stroke fg-dim, dasharray 2 2, opacity 0.6) 추가.
+- 운용역이 "현재값이 6M 평균 위/아래" 즉시 인지. 추세 vs 회귀 구분 명료.
+
+### 가중치 — yaml `priority` 필드
+- yaml series/derived에 선택 필드 `priority: 1~12`. 미설정 시 99로 기본.
+- `compute_panels`/`compute_derivations`에서 priority 오름차순 stable sort. 동일 priority 내에서는 yaml 정의 순서 유지.
+- 효과 확인: ust_core 패널 카드 순서가 `[UST 2Y(1), UST 10Y(2), UST 30Y(3), 2s10s slope(4), UST 3M/5Y/7Y/5s30s slope(미설정)]`로 재정렬됨.
+
+### Headline 통합 로직
+- `collect_headlines(panels, derived)` 신규. panel 카드 + derived 카드 중 `headline: true` 모두 수집해 priority 순으로 반환.
+- template render에 `headlines=[...]` 전달. template 상단에 `headline-strip` section 추가.

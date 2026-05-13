@@ -57,7 +57,7 @@
 - [x] 패널 A~H 각각 — 실데이터로 표시되는 값이 운용역 감각과 맞는지 검증. `scripts/dump_metrics.py` 출력으로 전 패널 1차 sanity-check 후 4건 보정 완료. (1) SFR 카드 변화량을 3 decimal로 (px 단위 0.005 미만 변화가 가려지던 문제) (2) H.4.1 4종(Fed BS/Reserve/TGA/RRP)을 `frequency: release`로 — daily fill 노이즈 제거, 1D=Prev release 대비 변화로 의미 부여 (3) `swap_spread` 패널명 → "SOFR Swap Rates"로 변경 (진짜 스왑스프레드는 derived에 별도) (4) SPX/NDX/RTY 200dma 이격도 derived 추가 — 강세장에서 raw level의 +2σ 깔림을 보완하는 추세 강도 보조지표(unit `dev%`)
 - [x] percentile/z-score 윈도우 적정성 검토 — 메트릭별 `window_years` 옵션 도입. 정책금리(SOFR/IORB/SFR1~6) + 실질금리(TIPS 5Y/10Y) + 관련 derived 8종을 `window_years: 5`로. fetch history도 5Y+buffer로 확장. 카드 라벨은 동적 ("3Y %ile"/"5Y %ile")
 - [x] FOMC implied path 계산 로직 검증 — SFR{1,2,3} Comdty는 generic rolling 3M SOFR future라 "다음 IMM 분기 평균 SOFR"을 implied하지, "다음 FOMC implied rate"가 아님. WIRP-style 회의별 implied rate를 Bloomberg API로 받을 수 있는지 probe (`scripts/probe_fomc_implied.py`) 한 결과 apiFLDS 키워드 search 0 hit + 17개 candidate field 전부 `Field not valid`로 회사 entitlement 문제가 아니라 API 구조상 노출 안 됨 확인. → SFR derived 5종(SFR1/2/3 implied rate, SFR1/2-IORB gap) 제거. 정식 회의별 implied path가 필요해지면 향후 FF futures decomposition(B-2)으로 별도 진행
-- [ ] 가중치 / 차트 스케일 / 색상 등 시각 튜닝
+- [x] 가중치 / 차트 스케일 / 색상 등 시각 튜닝 — 4건 적용. (A) z-score 색 임계 1σ/2σ → 1.5σ/2.5σ로 완화. (B) 핵심 12 metric 헤드라인 strip을 topbar 아래에 노출 (UST 2/10/30Y, 2s10s, 10Y BEI/TIPS, 10Y Swap Spread, VIX/MOVE, IG/HY OAS, USDJPY). (C) percentile 숫자 아래에 0~100 슬라이더 바(50% 마커 포함). (D) sparkline에 6M 평균 dashed horizontal line. 가중치는 yaml의 `priority` 필드로 처리 — 패널 내 카드/derived 모두 priority 오름차순 정렬, headline strip은 priority 1~12 카드를 한 줄로 통합.
 - [ ] 누락된 티커 추가 / 불필요한 티커 제거
 
 ## Phase 4 — 자동화 & 운영

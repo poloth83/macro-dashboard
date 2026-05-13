@@ -30,6 +30,7 @@ class MetricStats:
     low_52w: Optional[float]
     sparkline_6m: list[float]        # 오래된 → 최신 순 (차트용)
     sparkline_points: str            # SVG polyline points
+    sparkline_baseline_y: Optional[float]   # sparkline 영역 내 평균값의 y좌표 (없으면 None)
     as_of: Optional[str]             # ISO date
     frequency: str                   # daily | release
     change_1d_label: str
@@ -103,7 +104,7 @@ def compute_metric(
             percentile=None, zscore=None,
             window_years=window_years,
             high_52w=None, low_52w=None,
-            sparkline_6m=[], sparkline_points="", as_of=None,
+            sparkline_6m=[], sparkline_points="", sparkline_baseline_y=None, as_of=None,
             frequency=frequency,
             change_1d_label="Prev" if frequency == "release" else "1D",
             change_1w_label="5 rel" if frequency == "release" else "1W",
@@ -148,6 +149,7 @@ def compute_metric(
         low_52w=float(window_52w.min()) if not window_52w.empty else None,
         sparkline_6m=spark_values,
         sparkline_points=_sparkline_points(spark_values),
+        sparkline_baseline_y=_sparkline_baseline_y(spark_values),
         as_of=as_of,
         frequency=frequency,
         change_1d_label="Prev" if frequency == "release" else "1D",
@@ -174,6 +176,19 @@ def _sparkline_points(values: list[Optional[float]], width: int = 180, height: i
     return " ".join(points)
 
 
+def _sparkline_baseline_y(values: list[Optional[float]], height: int = 36) -> Optional[float]:
+    """sparkline 영역 내 6M 평균값의 y좌표. 현재값이 평균 위/아래 어디인지 한눈에."""
+    clean = [v for v in values if v is not None and not pd.isna(v)]
+    if len(clean) < 2:
+        return None
+    lo = min(clean)
+    hi = max(clean)
+    if hi == lo:
+        return height / 2
+    mean = sum(clean) / len(clean)
+    return round(height - ((mean - lo) / (hi - lo) * height), 1)
+
+
 def compute_panel(
     panel_name: str,
     series_map: dict[str, dict],
@@ -182,7 +197,8 @@ def compute_panel(
     한 패널 내의 모든 시리즈에 대해 compute_metric을 적용.
 
     Args:
-        series_map: {ticker: {"label": str, "unit": str, "timeseries": pd.Series, "window_years": int}, ...}
+        series_map: {ticker: {"label": str, "unit": str, "timeseries": pd.Series, "window_years": int,
+                              "priority": int (optional), "headline": bool (optional)}, ...}
 
     Returns:
         {"name": panel_name, "metrics": [MetricStats.to_dict(), ...]}
@@ -196,7 +212,11 @@ def compute_panel(
             frequency=info.get("frequency", "daily"),
             window_years=int(info.get("window_years", 3)),
         )
-        metrics.append(m.to_dict() | {"ticker": ticker})
+        metrics.append(m.to_dict() | {
+            "ticker": ticker,
+            "priority": int(info.get("priority", 99)),
+            "headline": bool(info.get("headline", False)),
+        })
     return {"name": panel_name, "metrics": metrics}
 
 
@@ -205,7 +225,9 @@ def compute_derived(
     unit: str,
     formula_series: pd.Series,
     window_years: int = 3,
+    priority: int = 99,
+    headline: bool = False,
 ) -> dict:
     """파생 메트릭 (BTP-Bund, swap spread 등)도 동일 통계 세트로."""
     m = compute_metric(label=name, unit=unit, timeseries=formula_series, window_years=window_years)
-    return m.to_dict() | {"ticker": name}
+    return m.to_dict() | {"ticker": name, "priority": int(priority), "headline": bool(headline)}

@@ -36,7 +36,7 @@
     {% for m in headlines %}
     <div class="headline-card {{ m.zscore | color_z }}">
       <div class="headline-label" title="{{ m.ticker }}">{{ m.label }}</div>
-      <div class="headline-current">{{ m.current | fmt(m.unit) }}</div>
+      <div class="headline-current">{{ m.current | fmt(m.unit, m.decimals) }}</div>
       <div class="headline-meta">
         <span class="headline-change">{{ m.change_1d | fmt_change(m.unit) }}</span>
         <span class="headline-pct">{{ m.percentile | fmt_pct }}</span>
@@ -68,7 +68,7 @@
           <div class="label">{{ m.label }}</div>
           <div class="ticker">{{ m.ticker }}</div>
         </header>
-        <div class="current">{{ m.current | fmt(m.unit) }}</div>
+        <div class="current">{{ m.current | fmt(m.unit, m.decimals) }}</div>
         <div class="changes">
           <span title="{{ m.change_1d_label }}">{{ m.change_1d_label }} {{ m.change_1d | fmt_change(m.unit) }}</span>
           <span title="{{ m.change_1w_label }}">{{ m.change_1w_label }} {{ m.change_1w | fmt_change(m.unit) }}</span>
@@ -88,8 +88,8 @@
           </div>
         </div>
         <div class="range-row">
-          <span class="range-low">L {{ m.low_52w | fmt(m.unit) }}</span>
-          <span class="range-high">H {{ m.high_52w | fmt(m.unit) }}</span>
+          <span class="range-low">L {{ m.low_52w | fmt(m.unit, m.decimals) }}</span>
+          <span class="range-high">H {{ m.high_52w | fmt(m.unit, m.decimals) }}</span>
         </div>
         {% if m.sparkline_points %}
         <svg class="sparkline" viewBox="0 0 180 36" preserveAspectRatio="none" aria-hidden="true">
@@ -118,7 +118,7 @@
           <div class="label">{{ m.label }}</div>
           <div class="ticker">derived</div>
         </header>
-        <div class="current">{{ m.current | fmt(m.unit) }}</div>
+        <div class="current">{{ m.current | fmt(m.unit, m.decimals) }}</div>
         <div class="changes">
           <span title="{{ m.change_1d_label }}">{{ m.change_1d_label }} {{ m.change_1d | fmt_change(m.unit) }}</span>
           <span title="{{ m.change_1w_label }}">{{ m.change_1w_label }} {{ m.change_1w | fmt_change(m.unit) }}</span>
@@ -138,8 +138,8 @@
           </div>
         </div>
         <div class="range-row">
-          <span class="range-low">L {{ m.low_52w | fmt(m.unit) }}</span>
-          <span class="range-high">H {{ m.high_52w | fmt(m.unit) }}</span>
+          <span class="range-low">L {{ m.low_52w | fmt(m.unit, m.decimals) }}</span>
+          <span class="range-high">H {{ m.high_52w | fmt(m.unit, m.decimals) }}</span>
         </div>
         {% if m.sparkline_points %}
         <svg class="sparkline" viewBox="0 0 180 36" preserveAspectRatio="none" aria-hidden="true">

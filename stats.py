@@ -216,6 +216,7 @@ def compute_panel(
             "ticker": ticker,
             "priority": int(info.get("priority", 99)),
             "headline": bool(info.get("headline", False)),
+            "decimals": info.get("decimals"),
         })
     return {"name": panel_name, "metrics": metrics}
 
@@ -227,7 +228,13 @@ def compute_derived(
     window_years: int = 3,
     priority: int = 99,
     headline: bool = False,
+    decimals=None,
 ) -> dict:
     """파생 메트릭 (BTP-Bund, swap spread 등)도 동일 통계 세트로."""
     m = compute_metric(label=name, unit=unit, timeseries=formula_series, window_years=window_years)
-    return m.to_dict() | {"ticker": name, "priority": int(priority), "headline": bool(headline)}
+    return m.to_dict() | {
+        "ticker": name,
+        "priority": int(priority),
+        "headline": bool(headline),
+        "decimals": decimals,
+    }

@@ -87,6 +87,7 @@ def compute_panels(snapshot: dict, series_map: dict[str, pd.Series]) -> list[dic
                 "timeseries": series_map.get(tk, pd.Series([], dtype=float)),
                 "priority": int(s.get("priority", 99)),
                 "headline": bool(s.get("headline", False)),
+                "decimals": s.get("decimals"),
             }
         result = stats_mod.compute_panel(panel_def["name"], series_for_panel)
         result["key"] = panel_key
@@ -133,6 +134,7 @@ def compute_derivations(series_map: dict[str, pd.Series]) -> list[dict]:
             window_years=int(d.get("window_years", 3)),
             priority=int(d.get("priority", 99)),
             headline=bool(d.get("headline", False)),
+            decimals=d.get("decimals"),
         ))
 
     return out
@@ -230,15 +232,19 @@ def render(snapshot_date: str, panels: list[dict], derived: list[dict], headline
 # Jinja2 filters
 # ---------------------------------------------------------------------------
 
-def _fmt_value(v: Optional[float], unit: str = "") -> str:
+def _fmt_value(v: Optional[float], unit: str = "", decimals=None) -> str:
     if v is None or (isinstance(v, float) and pd.isna(v)):
         return "—"
     if unit == "%":
-        return f"{v:.2f}%"
+        d = int(decimals) if decimals is not None else 2
+        return f"{v:.{d}f}%"
     if unit == "bp":
-        return f"{v:.0f}bp"
-    if unit in ("USD bn", "USD"):
-        return f"{v:,.0f}"
+        d = int(decimals) if decimals is not None else 0
+        return f"{v:,.{d}f}bp"
+    if unit == "USD bn":
+        return f"{v:,.0f} $bil"
+    if unit == "USD":
+        return f"${v:,.2f}"
     if unit == "JPY":
         return f"{v:.2f}"
     if unit == "KRW":

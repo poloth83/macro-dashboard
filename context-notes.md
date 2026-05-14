@@ -453,3 +453,39 @@ schtasks /create /tn "MacroRatesDashboard" /tr "C:\Users\Hana_FI\claude code_ai\
 - 사용자 위임으로 에이전트가 `run_daily.bat` 1회 수동 트리거.
 - 결과: `data/2026-05-14.json` 7.9MB, 74 ticker × 1384 obs, quality 0 errors / 0 warnings. `output/index.html` 219KB (어제 200KB → 19KB 증가, 신규 ticker 7종 반영).
 - 신규 ticker 7종(DXY/EURUSD/USSWIT5/USSWIT10/CL1/GC1/HG1) 모두 valid security로 확인. 우려했던 inflation swap도 정상.
+
+---
+
+## 2026-05-14 — 표시 정밀도/단위/만기 라벨 보정
+
+### 사용자 지시 요약
+1. UST(3M/2Y/5Y/7Y/10Y/30Y), 5Y/10Y BEI, 5Y5Y BEI, 5Y/10Y TIPS yield, 5Y/10Y Infl Swap, SOFR, SOFR Swap, 글로벌 듀레이션 → 소수점 **셋째자리**
+2. 2s10s slope, 5s30s slope, 10Y Swap Spread → 소수점 **둘째자리**
+3. US IG/HY OAS, LQD, HYG → 라벨에 만기 명시 (Avg Duration 기준)
+4. Fed BS/Reserve/TGA/RRP → 금액 단위 `$bil` 표시
+5. Fed BS ticker: `FARBAST Index` → `FARBFSRF Index`
+
+### 결정 — yaml series에 optional `decimals` 필드 도입
+- `fmt_value(v, unit, decimals=None)` 시그니처 변경. `%`/`bp` 단위에서 decimals 적용. 미설정 시 default(2/0) 유지.
+- `compute_panel`/`compute_derived`가 decimals를 metric dict에 포함 → template에서 `m.current | fmt(m.unit, m.decimals)` / range row 동일.
+- 변화량(`fmt_change`)은 일단 그대로 둠 (사용자 명시 없음). 필요 시 추가.
+
+### Fed BS ticker 검증 (FARBFSRF)
+- production fetch에서 valid security 확인. last=6753.66 USD bn (2026-05-06 release). 기존 FARBAST의 6710 USD bn과 유사 range — 같은 H.4.1 Total Assets 계열로 추정. scale: 0.001 그대로 유지(raw millions → $bil로 변환).
+
+### "USD bn" vs "USD" unit 분리
+- 기존엔 묶여서 `f"{v:,.0f}"` 단일 처리. 이제 분리.
+  - `USD bn` (Fed BS/Reserve/TGA/RRP) → `f"{v:,.0f} $bil"`.
+  - `USD` (LQD/HYG ETF) → `f"${v:,.2f}"` (소수점 둘째자리 가격).
+
+### OAS/ETF 만기 라벨 (Avg Duration 기준)
+- `US IG OAS` → `US IG OAS 7Y`
+- `US HY OAS` → `US HY OAS 4Y`
+- `LQD (IG ETF)` → `LQD 8Y (IG ETF)`
+- `HYG (HY ETF)` → `HYG 3Y (HY ETF)`
+
+### 결과 검증 (재빌드 통과)
+- UST 2Y 3.977%, UST 10Y 4.467%, UST 30Y 5.032%, SOFR 3.600%, IORB 3.650%, 5Y BEI 2.703%, 10Y BEI 2.496%, 5Y Infl Swap 2.764%, SOFR Swap 10Y 4.041%, Bund 10Y 3.100%, JGB 10Y 2.605% — 셋째자리 정상.
+- 2s10s 48.77bp, 5s30s 92.04bp, 10Y Swap Spread -42.58bp — 둘째자리 정상.
+- Fed BS 6,754 $bil, Reserve 3,033 $bil, TGA 878 $bil, RRP 2 $bil — $bil 표시 정상.
+- LQD $108.62, HYG $79.91 — USD 분리 정상.

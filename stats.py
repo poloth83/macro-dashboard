@@ -119,12 +119,13 @@ def compute_metric(
     if stats_series.empty:
         return empty()
 
-    current = float(series.iloc[-1]) if not pd.isna(series.iloc[-1]) else None
-    as_of = str(series.index[-1].date()) if hasattr(series.index[-1], "date") else str(series.index[-1])
+    # current/as_of는 NaN 제외한 last valid 기준. derived의 multi-ticker aligned 끝부분에
+    # 일부 ticker만 publish된 NaN row가 매달릴 때 카드가 "—"로 보이는 문제 회피.
+    current = float(stats_series.iloc[-1]) if not pd.isna(stats_series.iloc[-1]) else None
+    as_of_idx = stats_series.index[-1]
+    as_of = str(as_of_idx.date()) if hasattr(as_of_idx, "date") else str(as_of_idx)
 
     if frequency == "release":
-        current = float(stats_series.iloc[-1]) if not pd.isna(stats_series.iloc[-1]) else current
-        as_of = str(stats_series.index[-1].date()) if hasattr(stats_series.index[-1], "date") else str(stats_series.index[-1])
         window_stats = stats_series.tail(12 * window_years)
     else:
         window_stats = stats_series.tail(252 * window_years)

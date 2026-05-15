@@ -126,14 +126,12 @@ def compute_metric(
         current = float(stats_series.iloc[-1]) if not pd.isna(stats_series.iloc[-1]) else current
         as_of = str(stats_series.index[-1].date()) if hasattr(stats_series.index[-1], "date") else str(stats_series.index[-1])
         window_stats = stats_series.tail(12 * window_years)
-        window_52w = stats_series.tail(12)
-        window_6m = stats_series.tail(12)
     else:
         window_stats = stats_series.tail(252 * window_years)
-        window_52w = stats_series.tail(window_52w_days)
-        window_6m = stats_series.tail(window_6m_days)
 
-    spark_values = [float(x) if not pd.isna(x) else None for x in window_6m.tolist()]
+    # sparkline도 percentile/range와 동일 윈도우(window_stats) 사용.
+    # 이전엔 6M 고정이라 카드 내 통계와 시간축이 불일치.
+    spark_values = [float(x) if not pd.isna(x) else None for x in window_stats.tolist()]
 
     return MetricStats(
         label=label,

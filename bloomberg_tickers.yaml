@@ -151,8 +151,8 @@ panels:
 derived:
   - {name: "SOFR-IORB spread", formula: "SOFRRATE Index - IRRBIOER Index", unit: "bp", window_years: 5}
   - {name: "10Y Swap Spread", formula: "USOSFR10 Curncy - USGG10YR Index", unit: "bp", headline: true, priority: 7, decimals: 2}
-  - {name: "5Y Swap Spread", formula: "USOSFR5 Curncy - USGG5YR Index", unit: "bp"}
   - {name: "2Y Swap Spread", formula: "USOSFR2 Curncy - USGG2YR Index", unit: "bp"}
+  - {name: "5Y Swap Spread", formula: "USOSFR5 Curncy - USGG5YR Index", unit: "bp"}
   - {name: "30Y Swap Spread", formula: "USOSFR30 Curncy - USGG30YR Index", unit: "bp"}
   - {name: "BTP-Bund 10Y", formula: "GBTPGR10 Index - GDBR10 Index", unit: "bp"}
   - {name: "OAT-Bund 10Y", formula: "GFRN10 Index - GDBR10 Index", unit: "bp"}

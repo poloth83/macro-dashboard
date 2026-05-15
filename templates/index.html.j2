@@ -38,7 +38,7 @@
       <div class="headline-label" title="{{ m.ticker }}">{{ m.label }}</div>
       <div class="headline-current">{{ m.current | fmt(m.unit, m.decimals) }}</div>
       <div class="headline-meta">
-        <span class="headline-change">{{ m.change_1d | fmt_change(m.unit) }}</span>
+        <span class="headline-change">{{ m.change_1d | fmt_change(m.unit, m.decimals) }}</span>
         <span class="headline-pct">{{ m.percentile | fmt_pct }}</span>
       </div>
     </div>
@@ -70,9 +70,9 @@
         </header>
         <div class="current">{{ m.current | fmt(m.unit, m.decimals) }}</div>
         <div class="changes">
-          <span title="{{ m.change_1d_label }}">{{ m.change_1d_label }} {{ m.change_1d | fmt_change(m.unit) }}</span>
-          <span title="{{ m.change_1w_label }}">{{ m.change_1w_label }} {{ m.change_1w | fmt_change(m.unit) }}</span>
-          <span title="{{ m.change_1m_label }}">{{ m.change_1m_label }} {{ m.change_1m | fmt_change(m.unit) }}</span>
+          <span title="{{ m.change_1d_label }}">{{ m.change_1d_label }} {{ m.change_1d | fmt_change(m.unit, m.decimals) }}</span>
+          <span title="{{ m.change_1w_label }}">{{ m.change_1w_label }} {{ m.change_1w | fmt_change(m.unit, m.decimals) }}</span>
+          <span title="{{ m.change_1m_label }}">{{ m.change_1m_label }} {{ m.change_1m | fmt_change(m.unit, m.decimals) }}</span>
         </div>
         <div class="stats-row">
           <div class="stat stat-percentile">
@@ -120,9 +120,9 @@
         </header>
         <div class="current">{{ m.current | fmt(m.unit, m.decimals) }}</div>
         <div class="changes">
-          <span title="{{ m.change_1d_label }}">{{ m.change_1d_label }} {{ m.change_1d | fmt_change(m.unit) }}</span>
-          <span title="{{ m.change_1w_label }}">{{ m.change_1w_label }} {{ m.change_1w | fmt_change(m.unit) }}</span>
-          <span title="{{ m.change_1m_label }}">{{ m.change_1m_label }} {{ m.change_1m | fmt_change(m.unit) }}</span>
+          <span title="{{ m.change_1d_label }}">{{ m.change_1d_label }} {{ m.change_1d | fmt_change(m.unit, m.decimals) }}</span>
+          <span title="{{ m.change_1w_label }}">{{ m.change_1w_label }} {{ m.change_1w | fmt_change(m.unit, m.decimals) }}</span>
+          <span title="{{ m.change_1m_label }}">{{ m.change_1m_label }} {{ m.change_1m | fmt_change(m.unit, m.decimals) }}</span>
         </div>
         <div class="stats-row">
           <div class="stat stat-percentile">

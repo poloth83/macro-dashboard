@@ -270,14 +270,17 @@ def _fmt_value(v: Optional[float], unit: str = "", decimals=None) -> str:
     return f"{v:.2f}"
 
 
-def _fmt_change(v: Optional[float], unit: str = "") -> str:
+def _fmt_change(v: Optional[float], unit: str = "", decimals=None) -> str:
     if v is None or (isinstance(v, float) and pd.isna(v)):
         return "—"
     sign = "+" if v >= 0 else ""
     if unit == "%":
-        return f"{sign}{v*100:.0f}bp"   # 금리·BEI는 변화량을 bp로 표시
+        # 금리·BEI는 변화량을 bp로 표시. decimals=3(셋째자리 %) → bp는 0.1 단위(1 decimal).
+        d = max(0, int(decimals) - 2) if decimals is not None else 0
+        return f"{sign}{v*100:.{d}f}bp"
     if unit == "bp":
-        return f"{sign}{v:.0f}bp"
+        d = int(decimals) if decimals is not None else 0
+        return f"{sign}{v:.{d}f}bp"
     if unit == "px":
         # SOFR future 등 가격 단위. 0.005 미만 변화가 2 decimal에서 가려지므로 3 decimal.
         return f"{sign}{v:.3f}"

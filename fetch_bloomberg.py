@@ -247,9 +247,11 @@ def fetch_production(tickers: list[dict]) -> dict[str, pd.Series]:
             request.set("startDate", start_str)
             request.set("endDate", end_str)
             request.set("periodicitySelection", "DAILY")
+            # ACTIVE_DAYS_ONLY: 실제 데이터 있는 날만 받음. NON_TRADING_WEEKDAYS + PREVIOUS_VALUE를 쓰면
+            # 미국 EOD가 publish되기 전 KST 아침 fetch 시점에 "오늘" 자리가 어제 값으로 fill되어
+            # 1D 변화량이 0으로 가려짐. ACTIVE_DAYS_ONLY는 publish된 영업일만 시리즈에 포함.
             if t.get("frequency", "daily") != "release":
-                request.set("nonTradingDayFillOption", "NON_TRADING_WEEKDAYS")
-                request.set("nonTradingDayFillMethod", "PREVIOUS_VALUE")
+                request.set("nonTradingDayFillOption", "ACTIVE_DAYS_ONLY")
 
             session.sendRequest(request)
 

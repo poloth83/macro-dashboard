@@ -61,10 +61,13 @@ def _release_series(series: pd.Series) -> pd.Series:
     return clean[changed]
 
 
+_STATS_MIN_OBS = 12  # 분기 발표 release(GDP 등)도 3Y obs(=12)로 정성적 위치 산출 가능하도록.
+
+
 def _percentile(series: pd.Series, current: float) -> Optional[float]:
     """현재값이 series 분포 내 몇 percentile인지. 0(최저) ~ 100(최고)."""
     clean = series.dropna()
-    if len(clean) < 30:
+    if len(clean) < _STATS_MIN_OBS:
         return None
     return float((clean <= current).sum() / len(clean) * 100.0)
 
@@ -72,7 +75,7 @@ def _percentile(series: pd.Series, current: float) -> Optional[float]:
 def _zscore(series: pd.Series, current: float) -> Optional[float]:
     """현재값의 z-score = (current - mean) / std."""
     clean = series.dropna()
-    if len(clean) < 30:
+    if len(clean) < _STATS_MIN_OBS:
         return None
     std = clean.std()
     if std == 0 or pd.isna(std):

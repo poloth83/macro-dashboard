@@ -88,8 +88,8 @@
           </div>
         </div>
         <div class="range-row">
-          <span class="range-low">L {{ m.low_52w | fmt(m.unit, m.decimals) }}</span>
-          <span class="range-high">H {{ m.high_52w | fmt(m.unit, m.decimals) }}</span>
+          <span class="range-low">{{ m.window_years }}Y L {{ m.low_52w | fmt(m.unit, m.decimals) }}</span>
+          <span class="range-high">{{ m.window_years }}Y H {{ m.high_52w | fmt(m.unit, m.decimals) }}</span>
         </div>
         {% if m.sparkline_points %}
         <svg class="sparkline" viewBox="0 0 180 36" preserveAspectRatio="none" aria-hidden="true">
@@ -138,8 +138,8 @@
           </div>
         </div>
         <div class="range-row">
-          <span class="range-low">L {{ m.low_52w | fmt(m.unit, m.decimals) }}</span>
-          <span class="range-high">H {{ m.high_52w | fmt(m.unit, m.decimals) }}</span>
+          <span class="range-low">{{ m.window_years }}Y L {{ m.low_52w | fmt(m.unit, m.decimals) }}</span>
+          <span class="range-high">{{ m.window_years }}Y H {{ m.high_52w | fmt(m.unit, m.decimals) }}</span>
         </div>
         {% if m.sparkline_points %}
         <svg class="sparkline" viewBox="0 0 180 36" preserveAspectRatio="none" aria-hidden="true">

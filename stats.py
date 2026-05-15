@@ -145,11 +145,13 @@ def compute_metric(
         percentile=_percentile(window_stats, current) if current is not None else None,
         zscore=_zscore(window_stats, current) if current is not None else None,
         window_years=window_years,
-        high_52w=float(window_52w.max()) if not window_52w.empty else None,
-        low_52w=float(window_52w.min()) if not window_52w.empty else None,
+        high_52w=float(window_stats.max()) if not window_stats.empty else None,
+        low_52w=float(window_stats.min()) if not window_stats.empty else None,
         sparkline_6m=spark_values,
         sparkline_points=_sparkline_points(spark_values),
         sparkline_baseline_y=_sparkline_baseline_y(spark_values),
+        # high/low를 percentile과 동일 윈도우(window_stats)로 계산해 카드 내 일관성 확보.
+        # 필드명은 호환성을 위해 high_52w/low_52w 유지 (실제 의미는 window_years Y).
         as_of=as_of,
         frequency=frequency,
         change_1d_label="Prev" if frequency == "release" else "1D",
